@@ -3,6 +3,7 @@ from rest_framework import status, permissions, viewsets
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.mail import send_mail
@@ -246,6 +247,45 @@ class AuthViewSet(viewsets.ViewSet):
                 'user': UserSerializer(user).data
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        summary="Logout user",
+        description="Invalidate the current user's refresh token",
+        responses={
+            200: OpenApiExample(
+                'Success Response',
+                value={'message': 'Successfully logged out'},
+                status_codes=['200']
+            ),
+            400: OpenApiExample(
+                'Error Response',
+                value={'detail': 'Token is invalid or expired'},
+                status_codes=['400']
+            ),
+        }
+    )
+    @action(detail=False, methods=['post'])
+    def logout(self, request):
+        try:
+            refresh_token = request.data.get('refresh')
+            if not refresh_token:
+                return Response(
+                    {'detail': 'Refresh token is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            
+            return Response(
+                {'message': 'Successfully logged out'},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {'detail': 'Token is invalid or expired'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer

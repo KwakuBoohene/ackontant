@@ -74,7 +74,7 @@ const DashboardPage: React.FC = () => {
     <DashboardLayout>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <UserDropdown />
+       
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 32 }}>

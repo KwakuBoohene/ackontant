@@ -29,11 +29,10 @@ export default function UserDropdown() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 text-white hover:text-[#FFB32C] transition-colors"
+        className="flex items-center space-x-2 text-[#333] hover:text-[#FFB32C] transition-colors"
+        style={{ fontWeight: 500 }}
       >
-        <span className="font-medium">
-          {user?.first_name} {user?.last_name}
-        </span>
+        <span>Welcome, {user?.first_name}</span>
         <svg
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
