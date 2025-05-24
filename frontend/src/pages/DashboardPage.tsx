@@ -83,12 +83,14 @@ const DashboardPage: React.FC = () => {
     <DashboardLayout>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2 bg-[#FFB32C] text-white rounded-md hover:bg-[#FFB32C]/90"
-        >
-          Add Account
-        </button>
+        {accounts.length > 0 && (
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-4 py-2 bg-[#FFB32C] text-white rounded-md hover:bg-[#FFB32C]/90"
+          >
+            Add Account
+          </button>
+        )}
       </div>
 
       {isLoading ? (

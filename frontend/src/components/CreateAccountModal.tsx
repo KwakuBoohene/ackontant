@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAccountStore } from '../stores/accountStore';
+import { useCurrencyStore } from '../stores/currencyStore';
 import type { AccountFormData } from '../stores/accountStore';
 
 interface CreateAccountModalProps {
@@ -9,14 +10,21 @@ interface CreateAccountModalProps {
 
 const CreateAccountModal: React.FC<CreateAccountModalProps> = ({ isOpen, onClose }) => {
   const createAccount = useAccountStore(state => state.createAccount);
+  const { currencies, fetchCurrencies, isLoading: isLoadingCurrencies } = useCurrencyStore();
   const [formData, setFormData] = useState<AccountFormData>({
     name: '',
     type: 'BANK',
-    currency: '',
+    currency_id: '',
     initial_balance: 0,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchCurrencies();
+    }
+  }, [isOpen, fetchCurrencies]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,17 +94,22 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({ isOpen, onClose
                 Currency
               </label>
               <select
-                value={formData.currency}
-                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                value={formData.currency_id}
+                onChange={(e) => setFormData({ ...formData, currency_id: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFB32C]"
                 required
+                disabled={isLoadingCurrencies}
               >
                 <option value="">Select Currency</option>
-                <option value="USD">USD - US Dollar</option>
-                <option value="EUR">EUR - Euro</option>
-                <option value="GBP">GBP - British Pound</option>
-                <option value="GHS">GHS - Ghanaian Cedi</option>
+                {currencies.map((currency) => (
+                  <option key={currency.id} value={currency.id}>
+                    {currency.code} - {currency.name}
+                  </option>
+                ))}
               </select>
+              {isLoadingCurrencies && (
+                <p className="text-sm text-gray-500 mt-1">Loading currencies...</p>
+              )}
             </div>
 
             <div>
@@ -127,7 +140,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({ isOpen, onClose
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingCurrencies}
                 className="px-4 py-2 bg-[#FFB32C] text-white rounded-md hover:bg-[#FFB32C]/90 disabled:opacity-50"
               >
                 {isSubmitting ? 'Creating...' : 'Create Account'}

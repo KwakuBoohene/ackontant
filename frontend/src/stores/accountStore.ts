@@ -1,18 +1,29 @@
 import { create } from 'zustand';
 import api from '../services/api';
 
-export type AccountType = 'BANK' | 'CASH' | 'MOBILE' | 'CREDIT' | 'OTHER';
+export interface AccountType {
+  CHECKING: 'Checking';
+  SAVINGS: 'Savings';
+  BANK: 'Bank';
+  CREDIT_CARD: 'Credit Card';
+  INVESTMENT: 'Investment';
+  CASH: 'Cash';
+}
+
+export interface Currency {
+  id: string;
+  code: string;
+  name: string;
+  symbol: string;
+  decimal_places: number;
+}
 
 export interface Account {
   id: string;
+  user: string;
   name: string;
-  type: AccountType;
-  currency: {
-    id: string;
-    code: string;
-    name: string;
-    symbol: string;
-  };
+  type: keyof AccountType;
+  currency: Currency;
   initial_balance: number;
   current_balance: number;
   base_currency_balance: number;
@@ -23,24 +34,27 @@ export interface Account {
 
 export interface AccountFormData {
   name: string;
-  type: AccountType;
-  currency: string;
+  type: keyof AccountType;
+  currency_id: string;
   initial_balance: number;
 }
 
 interface AccountState {
   accounts: Account[];
+  currentAccount: Account | null;
   isLoading: boolean;
   error: string | null;
   
   // Actions
   fetchAccounts: () => Promise<void>;
-  createAccount: (data: AccountFormData) => Promise<Account>;
+  fetchAccount: (id: string) => Promise<void>;
+  createAccount: (data: AccountFormData) => Promise<void>;
   clearError: () => void;
 }
 
-export const useAccountStore = create<AccountState>((set, get) => ({
+export const useAccountStore = create<AccountState>((set) => ({
   accounts: [],
+  currentAccount: null,
   isLoading: false,
   error: null,
 
@@ -48,7 +62,6 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const response = await api.get('/accounts/');
-      // Handle both array and paginated response formats
       const accounts = Array.isArray(response.data) ? response.data : response.data.results || [];
       set({ accounts, isLoading: false });
     } catch (error) {
@@ -57,15 +70,24 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }
   },
 
+  fetchAccount: async (id: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      const response = await api.get(`/accounts/${id}/`);
+      set({ currentAccount: response.data, isLoading: false });
+    } catch (error) {
+      console.error('Error fetching account:', error);
+      set({ error: 'Failed to fetch account', isLoading: false });
+    }
+  },
+
   createAccount: async (data: AccountFormData) => {
     try {
       set({ isLoading: true, error: null });
-      const response = await api.post('/accounts/', data);
-      set(state => ({
-        accounts: [...state.accounts, response.data],
-        isLoading: false
-      }));
-      return response.data;
+      await api.post('/accounts/', data);
+      const response = await api.get('/accounts/');
+      const accounts = Array.isArray(response.data) ? response.data : response.data.results || [];
+      set({ accounts, isLoading: false });
     } catch (error) {
       console.error('Error creating account:', error);
       set({ error: 'Failed to create account', isLoading: false });
