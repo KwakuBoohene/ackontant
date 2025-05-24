@@ -251,6 +251,18 @@ class AuthViewSet(viewsets.ViewSet):
     @extend_schema(
         summary="Logout user",
         description="Invalidate the current user's refresh token",
+        request={
+            'application/json': {
+                'type': 'object',
+                'required': ['refresh'],
+                'properties': {
+                    'refresh': {
+                        'type': 'string',
+                        'description': 'The refresh token to invalidate'
+                    }
+                }
+            }
+        },
         responses={
             200: OpenApiExample(
                 'Success Response',

@@ -36,9 +36,15 @@ export const useAuthStore = create<AuthState>()(
       },
       logout: async () => {
         try {
-          const refreshToken = useAuthStore.getState().refreshToken;
-          if (refreshToken) {
-            await api.post('/auth/logout/', { refresh: refreshToken });
+          const state = useAuthStore.getState();
+          const refreshToken = state.refreshToken;
+          const accessToken = state.accessToken;
+          
+          if (refreshToken && accessToken) {
+            await api.post('/auth/logout/', 
+              { refresh: refreshToken },
+              { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
           }
         } catch (error) {
           console.error('Logout error:', error);
