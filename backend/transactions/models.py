@@ -1,7 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from users.base import UUIDModel
 
-class Transaction(models.Model):
+class Transaction(UUIDModel):
     TRANSACTION_TYPES = [
         ('INCOME', 'Income'),
         ('EXPENSE', 'Expense'),
@@ -22,8 +23,6 @@ class Transaction(models.Model):
     is_recurring = models.BooleanField(default=False)
     recurring_rule = models.JSONField(null=True, blank=True)  # For storing recurrence rules
     is_archived = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-date', '-created_at']
@@ -36,7 +35,7 @@ class Transaction(models.Model):
     def __str__(self):
         return f"{self.get_type_display()} - {self.amount} {self.currency.code} - {self.date}"
 
-class Category(models.Model):
+class Category(UUIDModel):
     CATEGORY_TYPES = [
         ('INCOME', 'Income'),
         ('EXPENSE', 'Expense'),
@@ -50,8 +49,6 @@ class Category(models.Model):
     color = models.CharField(max_length=7, default='#000000')  # Hex color code
     icon = models.CharField(max_length=50, null=True, blank=True)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name_plural = "Categories"
@@ -64,14 +61,12 @@ class Category(models.Model):
     def __str__(self):
         return f"{self.name} ({self.get_type_display()})"
 
-class Tag(models.Model):
+class Tag(UUIDModel):
     user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='tags')
     name = models.CharField(max_length=50)
     color = models.CharField(max_length=7, default='#000000')  # Hex color code
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['name']

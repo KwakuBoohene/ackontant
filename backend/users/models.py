@@ -2,8 +2,10 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from .base import UUIDModel
 
-class User(AbstractUser):
+class User(AbstractUser, UUIDModel):
+    username = models.EmailField(_('email address'), unique=True)
     email = models.EmailField(_('email address'), unique=True)
     base_currency = models.ForeignKey('accounts.Currency', on_delete=models.PROTECT, related_name='base_currency_users', null=True)
     
@@ -13,21 +15,32 @@ class User(AbstractUser):
     email_verification_sent_at = models.DateTimeField(null=True, blank=True)
     password_reset_token = models.CharField(max_length=100, null=True, blank=True)
     password_reset_sent_at = models.DateTimeField(null=True, blank=True)
-    
-    # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     last_login = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         indexes = [
             models.Index(fields=['email']),
+            models.Index(fields=['username']),
         ]
 
     def __str__(self):
         return self.email
 
-class SocialAuth(models.Model):
+    def save(self, *args, **kwargs):
+        # Ensure email and username are always the same
+        if self.email:
+            self.username = self.email
+        elif self.username:
+            self.email = self.username
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        # Ensure email and username are always the same
+        if self.email and self.username and self.email != self.username:
+            self.username = self.email
+
+class SocialAuth(UUIDModel):
     PROVIDER_CHOICES = [
         ('GOOGLE', 'Google'),
         ('FACEBOOK', 'Facebook'),
@@ -44,8 +57,6 @@ class SocialAuth(models.Model):
     refresh_token = models.TextField(null=True, blank=True)
     token_expires_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ['provider', 'provider_user_id']

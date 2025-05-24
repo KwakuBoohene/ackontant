@@ -21,6 +21,18 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
+        
+        # Ensure email and username are the same
+        if attrs.get('email') and attrs.get('username') and attrs['email'] != attrs['username']:
+            raise serializers.ValidationError({"email": "Email and username must be the same."})
+        
+        # If only email is provided, use it as username
+        if attrs.get('email') and not attrs.get('username'):
+            attrs['username'] = attrs['email']
+        # If only username is provided, use it as email
+        elif attrs.get('username') and not attrs.get('email'):
+            attrs['email'] = attrs['username']
+            
         return attrs
 
     def create(self, validated_data):
@@ -31,7 +43,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 class SocialAuthSerializer(serializers.ModelSerializer):
     class Meta:
         model = SocialAuth
-        fields = ('provider_user_id', 'provider_email', 'provider_picture')
+        fields = ('id', 'provider_user_id', 'provider_email', 'provider_picture')
+        read_only_fields = ('id',)
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()

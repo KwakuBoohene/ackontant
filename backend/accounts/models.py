@@ -1,15 +1,14 @@
 from django.db import models
+from users.base import UUIDModel
 
 # Create your models here.
 
-class Currency(models.Model):
+class Currency(UUIDModel):
     code = models.CharField(max_length=3, unique=True)  # e.g., USD, EUR, GBP
     name = models.CharField(max_length=50)  # e.g., US Dollar, Euro
     symbol = models.CharField(max_length=5)  # e.g., $, €, £
     decimal_places = models.PositiveSmallIntegerField(default=2)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name_plural = "Currencies"
@@ -18,7 +17,7 @@ class Currency(models.Model):
     def __str__(self):
         return f"{self.code} - {self.name}"
 
-class Account(models.Model):
+class Account(UUIDModel):
     ACCOUNT_TYPES = [
         ('BANK', 'Bank Account'),
         ('CASH', 'Cash'),
@@ -37,8 +36,6 @@ class Account(models.Model):
     last_exchange_rate = models.DecimalField(max_digits=15, decimal_places=6, null=True)
     last_conversion_date = models.DateTimeField(null=True)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['name']
@@ -50,15 +47,13 @@ class Account(models.Model):
     def __str__(self):
         return f"{self.name} ({self.get_type_display()})"
 
-class ExchangeRate(models.Model):
+class ExchangeRate(UUIDModel):
     user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='exchange_rates')
     from_currency = models.ForeignKey(Currency, on_delete=models.PROTECT, related_name='exchange_rates_from')
     to_currency = models.ForeignKey(Currency, on_delete=models.PROTECT, related_name='exchange_rates_to')
     rate = models.DecimalField(max_digits=15, decimal_places=6)
     date = models.DateField()
     is_manual = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ['user', 'from_currency', 'to_currency', 'date']
