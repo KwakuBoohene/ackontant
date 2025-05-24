@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     
     # Third party apps
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
     'allauth',
     'allauth.account',
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'django_filters',
     'django_extensions',
+    'drf_spectacular',
 
     
     # Local apps
@@ -171,10 +173,9 @@ AUTH_USER_MODEL = 'users.User'
 
 # Django REST Framework settings
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
+    'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
+    ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
@@ -185,6 +186,26 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# Spectacular settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Ackontant API',
+    'DESCRIPTION': 'API for Ackontant - Personal Finance Management System',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': True,
+    },
+    'COMPONENT_SPLIT_REQUEST': True,
+    'TAGS': [
+        {'name': 'auth', 'description': 'Authentication operations'},
+        {'name': 'users', 'description': 'User management operations'},
+        {'name': 'accounts', 'description': 'Account management operations'},
+    ],
 }
 
 # JWT settings

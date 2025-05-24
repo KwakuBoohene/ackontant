@@ -1,23 +1,13 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import (
-    RegisterView, VerifyEmailView, ResendVerificationView,
-    ForgotPasswordView, ResetPasswordView, SocialAuthView
-)
+from .views import AuthViewSet, UserViewSet
+
+router = DefaultRouter()
+router.register(r'auth', AuthViewSet, basename='auth')
+router.register(r'users', UserViewSet, basename='users')
 
 urlpatterns = [
-    # JWT endpoints
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    
-    # Registration and email verification
-    path('register/', RegisterView.as_view(), name='register'),
-    path('verify-email/', VerifyEmailView.as_view(), name='verify-email'),
-    path('resend-verification/', ResendVerificationView.as_view(), name='resend-verification'),
-    
-    # Password management
-    path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
-    path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
-    
-    # Social authentication
-    path('social/<str:provider>/', SocialAuthView.as_view(), name='social-auth'),
+    path('', include(router.urls)),
+    path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ] 
