@@ -31,8 +31,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class SocialAuthSerializer(serializers.ModelSerializer):
     class Meta:
         model = SocialAuth
-        fields = ('provider', 'provider_user_id', 'provider_email', 'provider_picture')
-        read_only_fields = ('provider_user_id', 'provider_email', 'provider_picture')
+        fields = ('provider_user_id', 'provider_email', 'provider_picture')
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
