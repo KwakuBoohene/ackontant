@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { SocialAccount, SocialProvider } from '../types/auth';
-import PageLayout from '../components/PageLayout';
+import type { SocialAccount, SocialProvider } from '../../types/auth';
+import PageLayout from '../../components/PageLayout';
 
 const allProviders: SocialProvider[] = ['GOOGLE', 'FACEBOOK', 'GITHUB', 'APPLE'];
 

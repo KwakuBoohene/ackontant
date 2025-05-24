@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { PasswordResetData, AuthError } from '../types/auth';
-import PageLayout from '../components/PageLayout';
+import type { PasswordResetData, AuthError } from '../../types/auth';
+import PageLayout from '../../components/PageLayout';
 
 export default function ResetPasswordPage() {
   const [form, setForm] = useState<PasswordResetData>({ email: '', password: '', token: '' });

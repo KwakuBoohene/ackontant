@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { LoginFormData, SocialProvider, AuthError } from '../types/auth';
-import PageLayout from '../components/PageLayout';
+import type { LoginFormData, SocialProvider, AuthError } from '../../types/auth';
+import PageLayout from '../../components/PageLayout';
 
 const socialProviders: SocialProvider[] = ['GOOGLE', 'FACEBOOK', 'GITHUB', 'APPLE'];
 

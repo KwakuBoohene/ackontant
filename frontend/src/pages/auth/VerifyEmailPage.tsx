@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import PageLayout from '../components/PageLayout';
+import PageLayout from '../../components/PageLayout';
 
 export default function VerifyEmailPage() {
   const [status, setStatus] = useState<'pending' | 'success' | 'error'>('pending');

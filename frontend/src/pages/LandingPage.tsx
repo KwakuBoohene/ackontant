@@ -1,6 +1,6 @@
-import React from 'react';
+
 import { useNavigate } from '@tanstack/react-router';
-import logoAckontant from '../assets/icons/logos/logo-ackontant.svg';
+
 
 const colors = {
   yellow: '#FFB32C',
