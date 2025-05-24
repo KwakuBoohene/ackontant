@@ -22,10 +22,18 @@ A modern, secure, and user-friendly personal accounting web application that hel
 
 ### Frontend
 - Node.js 20.11.1 LTS
-- React 18.2.0
-- TypeScript 5.3.3
-- Vite 5.1.3
+- React 19.x
+- TypeScript 5.8.x
+- Vite 6.x
 - Zustand (State Management)
+- TanStack Query (react-query)
+- TanStack Router
+- Tailwind CSS
+- Lucide React
+- Heroicons React
+- Class Variance Authority
+- Tailwind Merge
+- clsx
 
 ## Prerequisites
 
@@ -187,4 +195,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - TypeScript
 - Vite
 - Zustand
+- TanStack Query (react-query)
+- TanStack Router
+- Tailwind CSS
+- Lucide React
+- Heroicons React
+- Class Variance Authority
+- Tailwind Merge
+- clsx
 - All other open-source libraries used in this project 
