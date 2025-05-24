@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse, OpenApiTypes
 from .models import Currency, Account, ExchangeRate
 from .serializers import CurrencySerializer, AccountSerializer, ExchangeRateSerializer
 
@@ -86,27 +86,57 @@ class AccountViewSet(viewsets.ModelViewSet):
     @extend_schema(
         summary="Create account",
         description="Create a new account for the current user",
-        request=AccountSerializer,
-        responses={201: AccountSerializer, 400: None},
-        examples=[
-            OpenApiExample(
-                'Success Response',
-                value={
-                    'id': 'uuid',
-                    'name': 'Savings Account',
-                    'type': 'SAVINGS',
-                    'currency': {
-                        'id': 'uuid',
-                        'code': 'USD',
-                        'name': 'US Dollar',
-                        'symbol': '$'
-                    },
-                    'created_at': '2024-03-20T12:00:00Z',
-                    'updated_at': '2024-03-20T12:00:00Z'
-                },
-                status_codes=['201']
+        request={
+            'application/json': {
+                'type': 'object',
+                'required': ['name', 'type', 'currency_id', 'initial_balance'],
+                'properties': {
+                    'name': {'type': 'string', 'description': 'Name of the account'},
+                    'type': {'type': 'string', 'enum': ['BANK', 'CASH', 'MOBILE', 'CREDIT', 'OTHER'], 'description': 'Type of the account'},
+                    'currency_id': {'type': 'string', 'format': 'uuid', 'description': 'ID of the currency'},
+                    'initial_balance': {'type': 'number', 'description': 'Initial balance of the account'}
+                }
+            }
+        },
+        responses={
+            201: OpenApiResponse(
+                response=AccountSerializer,
+                description="Account created successfully",
+                examples=[
+                    OpenApiExample(
+                        'Success Response',
+                        value={
+                            'id': 'uuid',
+                            'name': 'Savings Account',
+                            'type': 'BANK',
+                            'currency': {
+                                'id': 'uuid',
+                                'code': 'USD',
+                                'name': 'US Dollar',
+                                'symbol': '$'
+                            },
+                            'created_at': '2024-03-20T12:00:00Z',
+                            'updated_at': '2024-03-20T12:00:00Z'
+                        }
+                    )
+                ]
             ),
-        ]
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request",
+                examples=[
+                    OpenApiExample(
+                        'Error Response',
+                        value={
+                            'currency_id': ['This field is required.'],
+                            'name': ['This field is required.'],
+                            'type': ['This field is required.'],
+                            'initial_balance': ['This field is required.']
+                        }
+                    )
+                ]
+            )
+        }
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
@@ -161,32 +191,60 @@ class ExchangeRateViewSet(viewsets.ModelViewSet):
     @extend_schema(
         summary="Create exchange rate",
         description="Create a new exchange rate for the current user",
-        request=ExchangeRateSerializer,
-        responses={201: ExchangeRateSerializer, 400: None},
-        examples=[
-            OpenApiExample(
-                'Success Response',
-                value={
-                    'id': 'uuid',
-                    'from_currency': {
-                        'id': 'uuid',
-                        'code': 'USD',
-                        'name': 'US Dollar',
-                        'symbol': '$'
-                    },
-                    'to_currency': {
-                        'id': 'uuid',
-                        'code': 'EUR',
-                        'name': 'Euro',
-                        'symbol': '€'
-                    },
-                    'rate': '0.85',
-                    'created_at': '2024-03-20T12:00:00Z',
-                    'updated_at': '2024-03-20T12:00:00Z'
-                },
-                status_codes=['201']
+        request={
+            'application/json': {
+                'type': 'object',
+                'required': ['from_currency_id', 'to_currency_id', 'rate'],
+                'properties': {
+                    'from_currency_id': {'type': 'string', 'format': 'uuid', 'description': 'ID of the source currency'},
+                    'to_currency_id': {'type': 'string', 'format': 'uuid', 'description': 'ID of the target currency'},
+                    'rate': {'type': 'number', 'description': 'Exchange rate value'}
+                }
+            }
+        },
+        responses={
+            201: OpenApiResponse(
+                response=ExchangeRateSerializer,
+                description="Exchange rate created successfully",
+                examples=[
+                    OpenApiExample(
+                        'Success Response',
+                        value={
+                            'id': 'uuid',
+                            'from_currency': {
+                                'id': 'uuid',
+                                'code': 'USD',
+                                'name': 'US Dollar',
+                                'symbol': '$'
+                            },
+                            'to_currency': {
+                                'id': 'uuid',
+                                'code': 'EUR',
+                                'name': 'Euro',
+                                'symbol': '€'
+                            },
+                            'rate': '0.85',
+                            'created_at': '2024-03-20T12:00:00Z',
+                            'updated_at': '2024-03-20T12:00:00Z'
+                        }
+                    )
+                ]
             ),
-        ]
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request",
+                examples=[
+                    OpenApiExample(
+                        'Error Response',
+                        value={
+                            'from_currency_id': ['This field is required.'],
+                            'to_currency_id': ['This field is required.'],
+                            'rate': ['This field is required.']
+                        }
+                    )
+                ]
+            )
+        }
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)

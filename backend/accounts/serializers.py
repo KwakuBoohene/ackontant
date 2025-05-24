@@ -10,11 +10,12 @@ class CurrencySerializer(serializers.ModelSerializer):
 class AccountSerializer(serializers.ModelSerializer):
     currency = CurrencySerializer(read_only=True)
     currency_id = serializers.UUIDField(write_only=True)
+    initial_balance = serializers.DecimalField(max_digits=15, decimal_places=2, required=True)
 
     class Meta:
         model = Account
-        fields = ['id', 'name', 'type', 'currency', 'currency_id', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'type', 'currency', 'currency_id', 'initial_balance', 'current_balance', 'base_currency_balance', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'current_balance', 'base_currency_balance', 'created_at', 'updated_at']
 
     def validate_currency_id(self, value):
         try:
@@ -22,6 +23,12 @@ class AccountSerializer(serializers.ModelSerializer):
             return value
         except Currency.DoesNotExist:
             raise serializers.ValidationError("Invalid currency ID")
+
+    def create(self, validated_data):
+        # Set current_balance and base_currency_balance to initial_balance
+        validated_data['current_balance'] = validated_data['initial_balance']
+        validated_data['base_currency_balance'] = validated_data['initial_balance']
+        return super().create(validated_data)
 
 class ExchangeRateSerializer(serializers.ModelSerializer):
     from_currency = CurrencySerializer(read_only=True)
