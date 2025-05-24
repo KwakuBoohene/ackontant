@@ -11,7 +11,7 @@ import jwt
 from datetime import datetime, timedelta
 from .serializers import (
     UserSerializer, RegisterSerializer, SocialAuthSerializer,
-    EmailVerificationSerializer, PasswordResetSerializer
+    EmailVerificationSerializer, PasswordResetSerializer, LoginSerializer
 )
 from .models import User
 from rest_framework.decorators import action
@@ -200,6 +200,51 @@ class AuthViewSet(viewsets.ViewSet):
                     {'error': 'Invalid or expired token'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        summary="Login user",
+        description="Authenticate user and return JWT tokens",
+        request=OpenApiRequest(LoginSerializer),
+        responses={
+            200: OpenApiExample(
+                'Success Response',
+                value={
+                    'access': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
+                    'refresh': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
+                    'user': {
+                        'id': 'uuid',
+                        'email': 'user@example.com',
+                        'is_email_verified': True
+                    }
+                },
+                status_codes=['200']
+            ),
+            400: OpenApiExample(
+                'Error Response',
+                value={
+                    'detail': 'No active account found with the given credentials'
+                },
+                status_codes=['400']
+            ),
+        }
+    )
+    @action(detail=False, methods=['post'])
+    def login(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            refresh = RefreshToken.for_user(user)
+            
+            # Update last login
+            user.last_login = timezone.now()
+            user.save(update_fields=['last_login'])
+            
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': UserSerializer(user).data
+            })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserViewSet(viewsets.ModelViewSet):
