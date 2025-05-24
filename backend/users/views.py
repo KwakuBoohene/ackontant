@@ -16,7 +16,8 @@ from .serializers import (
 )
 from .models import User
 from rest_framework.decorators import action
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiRequest
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiRequest, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
 
 User = get_user_model()
 
@@ -208,26 +209,38 @@ class AuthViewSet(viewsets.ViewSet):
         description="Authenticate user and return JWT tokens",
         request=OpenApiRequest(LoginSerializer),
         responses={
-            200: OpenApiExample(
-                'Success Response',
-                value={
-                    'access': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
-                    'refresh': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
-                    'user': {
-                        'id': 'uuid',
-                        'email': 'user@example.com',
-                        'is_email_verified': True
-                    }
-                },
-                status_codes=['200']
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Login successful",
+                examples=[
+                    OpenApiExample(
+                        'Success Response',
+                        value={
+                            'access': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
+                            'refresh': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
+                            'user': {
+                                'id': 'uuid',
+                                'email': 'user@example.com',
+                                'is_email_verified': True
+                            }
+                        },
+                        status_codes=['200']
+                    )
+                ]
             ),
-            400: OpenApiExample(
-                'Error Response',
-                value={
-                    'detail': 'No active account found with the given credentials'
-                },
-                status_codes=['400']
-            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Login failed",
+                examples=[
+                    OpenApiExample(
+                        'Error Response',
+                        value={
+                            'detail': 'No active account found with the given credentials'
+                        },
+                        status_codes=['400']
+                    )
+                ]
+            )
         }
     )
     @action(detail=False, methods=['post'])
@@ -264,16 +277,28 @@ class AuthViewSet(viewsets.ViewSet):
             }
         },
         responses={
-            200: OpenApiExample(
-                'Success Response',
-                value={'message': 'Successfully logged out'},
-                status_codes=['200']
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Logout successful",
+                examples=[
+                    OpenApiExample(
+                        'Success Response',
+                        value={'message': 'Successfully logged out'},
+                        status_codes=['200']
+                    )
+                ]
             ),
-            400: OpenApiExample(
-                'Error Response',
-                value={'detail': 'Token is invalid or expired'},
-                status_codes=['400']
-            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Logout failed",
+                examples=[
+                    OpenApiExample(
+                        'Error Response',
+                        value={'detail': 'Token is invalid or expired'},
+                        status_codes=['400']
+                    )
+                ]
+            )
         }
     )
     @action(detail=False, methods=['post'])
