@@ -22,7 +22,7 @@ A modern, secure, and user-friendly personal accounting web application that hel
 
 ### Frontend
 - Node.js 20.11.1 LTS
-- React 19.x
+- React 18.x
 - TypeScript 5.8.x
 - Vite 6.x
 - Zustand (State Management)
