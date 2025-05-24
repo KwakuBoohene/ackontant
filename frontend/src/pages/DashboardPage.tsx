@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend, RadialBarChart, RadialBar } from 'recharts';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from '@tanstack/react-router';
 import UserDropdown from '../components/UserDropdown';
+import { useAccountStore } from '../stores/accountStore';
+import CreateAccountModal from '../components/CreateAccountModal';
 
 // Sample data for charts
 const balanceData = [
@@ -70,82 +72,77 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const DashboardPage: React.FC = () => {
+  const { accounts, fetchAccounts, isLoading, error } = useAccountStore();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
+
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-       
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="px-4 py-2 bg-[#FFB32C] text-white rounded-md hover:bg-[#FFB32C]/90"
+        >
+          Add Account
+        </button>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 32 }}>
-        {wallets.map((wallet, idx) => (
-          <div key={idx} style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 20, minWidth: 200, flex: '1 0 200px' }}>
-            <div style={{ fontWeight: 600, fontSize: 16 }}>{wallet.name}</div>
-            <div style={{ color: '#34c759', fontWeight: 700, fontSize: 20, marginTop: 8 }}>
-              {wallet.balance.toLocaleString()} {wallet.currency}
+      {isLoading ? (
+        <div className="text-white">Loading accounts...</div>
+      ) : error ? (
+        <div className="text-red-500">{error}</div>
+      ) : accounts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-64 bg-[#1e293b] rounded-lg">
+          <p className="text-white text-lg mb-4">No accounts available</p>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-4 py-2 bg-[#FFB32C] text-white rounded-md hover:bg-[#FFB32C]/90"
+          >
+            Add Your First Account
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {accounts.map((account) => (
+            <div
+              key={account.id}
+              className="bg-[#1e293b] rounded-lg p-6 shadow-lg"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{account.name}</h3>
+                  <p className="text-gray-400 text-sm">{account.type}</p>
+                </div>
+                <span className="text-[#FFB32C] text-sm">{account.currency.code}</span>
+              </div>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-gray-400 text-sm">Current Balance</p>
+                  <p className="text-white text-xl font-semibold">
+                    {account.currency.symbol}
+                    {account.current_balance.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Base Currency Balance</p>
+                  <p className="text-white text-lg">
+                    {account.base_currency_balance.toLocaleString()}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      <h2 style={{ margin: '32px 0 16px 0' }}>Overview</h2>
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 32 }}>
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 24, flex: 1, minWidth: 320 }}>
-          <div style={{ fontWeight: 500, marginBottom: 8 }}>Account Balance</div>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={balanceData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="balance" stroke="#4f8cff" strokeWidth={3} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          ))}
         </div>
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 24, flex: 1, minWidth: 320 }}>
-          <div style={{ fontWeight: 500, marginBottom: 8 }}>Income & Expenses</div>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={incomeExpenseData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="income" fill="#34c759" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="expense" fill="#ff3b30" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 24, flex: 1, minWidth: 320 }}>
-          <div style={{ fontWeight: 500, marginBottom: 8 }}>Spending by Category</div>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={spendingCategories} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
-                {spendingCategories.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 24, flex: 1, minWidth: 320 }}>
-          <div style={{ fontWeight: 500, marginBottom: 8 }}>Savings Progress</div>
-          <ResponsiveContainer width="100%" height={220}>
-            <RadialBarChart cx="50%" cy="50%" innerRadius={60} outerRadius={90} barSize={18} data={savingsProgress} startAngle={90} endAngle={-270} >
-              <RadialBar background dataKey="value" cornerRadius={10} >
-                {savingsProgress.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </RadialBar>
-              <Legend iconSize={10} layout="vertical" verticalAlign="middle" align="right" />
-              <Tooltip />
-            </RadialBarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      )}
+
+      <CreateAccountModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </DashboardLayout>
   );
 };
