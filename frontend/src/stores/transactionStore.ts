@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import api from '../services/api';
 import type { Currency } from './accountStore';
 
@@ -45,36 +46,46 @@ interface TransactionState {
   clearError: () => void;
 }
 
-export const useTransactionStore = create<TransactionState>((set) => ({
-  transactions: [],
-  isLoading: false,
-  error: null,
+export const useTransactionStore = create<TransactionState>()(
+  persist(
+    (set) => ({
+      transactions: [],
+      isLoading: false,
+      error: null,
 
-  fetchTransactions: async (filters = {}) => {
-    try {
-      set({ isLoading: true, error: null });
-      const response = await api.get('/transactions/', { params: filters });
-      const transactions = Array.isArray(response.data) ? response.data : response.data.results || [];
-      set({ transactions, isLoading: false });
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      set({ error: 'Failed to fetch transactions', isLoading: false });
+      fetchTransactions: async (filters = {}) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await api.get('/transactions/', { params: filters });
+          const transactions = Array.isArray(response.data) ? response.data : response.data.results || [];
+          set({ transactions, isLoading: false });
+        } catch (error) {
+          console.error('Error fetching transactions:', error);
+          set({ error: 'Failed to fetch transactions', isLoading: false });
+        }
+      },
+
+      createTransaction: async (data) => {
+        try {
+          set({ isLoading: true, error: null });
+          await api.post('/transactions/', data);
+          const response = await api.get('/transactions/');
+          const transactions = Array.isArray(response.data) ? response.data : response.data.results || [];
+          set({ transactions, isLoading: false });
+        } catch (error) {
+          console.error('Error creating transaction:', error);
+          set({ error: 'Failed to create transaction', isLoading: false });
+          throw error;
+        }
+      },
+
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: 'transaction-storage',
+      partialize: (state) => ({
+        transactions: state.transactions,
+      }),
     }
-  },
-
-  createTransaction: async (data) => {
-    try {
-      set({ isLoading: true, error: null });
-      await api.post('/transactions/', data);
-      const response = await api.get('/transactions/');
-      const transactions = Array.isArray(response.data) ? response.data : response.data.results || [];
-      set({ transactions, isLoading: false });
-    } catch (error) {
-      console.error('Error creating transaction:', error);
-      set({ error: 'Failed to create transaction', isLoading: false });
-      throw error;
-    }
-  },
-
-  clearError: () => set({ error: null }),
-})); 
+  )
+); 

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import api from '../services/api';
 
 export interface AccountType {
@@ -52,48 +53,59 @@ interface AccountState {
   clearError: () => void;
 }
 
-export const useAccountStore = create<AccountState>((set) => ({
-  accounts: [],
-  currentAccount: null,
-  isLoading: false,
-  error: null,
+export const useAccountStore = create<AccountState>()(
+  persist(
+    (set) => ({
+      accounts: [],
+      currentAccount: null,
+      isLoading: false,
+      error: null,
 
-  fetchAccounts: async () => {
-    try {
-      set({ isLoading: true, error: null });
-      const response = await api.get('/accounts/');
-      const accounts = Array.isArray(response.data) ? response.data : response.data.results || [];
-      set({ accounts, isLoading: false });
-    } catch (error) {
-      console.error('Error fetching accounts:', error);
-      set({ error: 'Failed to fetch accounts', isLoading: false });
+      fetchAccounts: async () => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await api.get('/accounts/');
+          const accounts = Array.isArray(response.data) ? response.data : response.data.results || [];
+          set({ accounts, isLoading: false });
+        } catch (error) {
+          console.error('Error fetching accounts:', error);
+          set({ error: 'Failed to fetch accounts', isLoading: false });
+        }
+      },
+
+      fetchAccount: async (id: string) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await api.get(`/accounts/${id}/`);
+          set({ currentAccount: response.data, isLoading: false });
+        } catch (error) {
+          console.error('Error fetching account:', error);
+          set({ error: 'Failed to fetch account', isLoading: false });
+        }
+      },
+
+      createAccount: async (data: AccountFormData) => {
+        try {
+          set({ isLoading: true, error: null });
+          await api.post('/accounts/', data);
+          const response = await api.get('/accounts/');
+          const accounts = Array.isArray(response.data) ? response.data : response.data.results || [];
+          set({ accounts, isLoading: false });
+        } catch (error) {
+          console.error('Error creating account:', error);
+          set({ error: 'Failed to create account', isLoading: false });
+          throw error;
+        }
+      },
+
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: 'account-storage',
+      partialize: (state) => ({
+        accounts: state.accounts,
+        currentAccount: state.currentAccount,
+      }),
     }
-  },
-
-  fetchAccount: async (id: string) => {
-    try {
-      set({ isLoading: true, error: null });
-      const response = await api.get(`/accounts/${id}/`);
-      set({ currentAccount: response.data, isLoading: false });
-    } catch (error) {
-      console.error('Error fetching account:', error);
-      set({ error: 'Failed to fetch account', isLoading: false });
-    }
-  },
-
-  createAccount: async (data: AccountFormData) => {
-    try {
-      set({ isLoading: true, error: null });
-      await api.post('/accounts/', data);
-      const response = await api.get('/accounts/');
-      const accounts = Array.isArray(response.data) ? response.data : response.data.results || [];
-      set({ accounts, isLoading: false });
-    } catch (error) {
-      console.error('Error creating account:', error);
-      set({ error: 'Failed to create account', isLoading: false });
-      throw error;
-    }
-  },
-
-  clearError: () => set({ error: null }),
-})); 
+  )
+); 
