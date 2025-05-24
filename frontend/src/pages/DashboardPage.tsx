@@ -1,8 +1,9 @@
 import React from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend, RadialBarChart, RadialBar } from 'recharts';
-import { useAuth } from '../context/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from '@tanstack/react-router';
+import UserDropdown from '../components/UserDropdown';
 
 // Sample data for charts
 const balanceData = [
@@ -55,13 +56,15 @@ const wallets = [
 ];
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const navigate = useNavigate();
+
   React.useEffect(() => {
     if (!isAuthenticated) {
       navigate({ to: '/auth/login' });
     }
   }, [isAuthenticated, navigate]);
+
   if (!isAuthenticated) return null;
   return <>{children}</>;
 };
@@ -69,6 +72,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const DashboardPage: React.FC = () => {
   return (
     <DashboardLayout>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <UserDropdown />
+      </div>
+
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 32 }}>
         {wallets.map((wallet, idx) => (
           <div key={idx} style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 20, minWidth: 200, flex: '1 0 200px' }}>
