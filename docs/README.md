@@ -161,8 +161,6 @@ cd frontend
 npm test
 ```
 
-
-
 ## Contributing
 
 1. Fork the repository
@@ -178,12 +176,9 @@ npm test
 - Use TypeScript for all frontend code
 - Write tests for new features
 
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-
 
 ## Acknowledgments
 
