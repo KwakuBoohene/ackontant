@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import type { LoginFormData, SocialProvider, AuthError } from '../../types/auth';
+import type { LoginFormData, AuthError } from '../../types/auth';
 import PageLayout from '../../components/PageLayout';
-
-const socialProviders: SocialProvider[] = ['GOOGLE', 'FACEBOOK', 'GITHUB', 'APPLE'];
 
 export default function LoginPage() {
   const [form, setForm] = useState<LoginFormData>({ email: '', password: '' });
@@ -18,11 +16,6 @@ export default function LoginPage() {
     setLoading(true);
     setError({ code: 'INVALID', message: 'Invalid credentials' });
     setLoading(false);
-  };
-
-  const handleSocialLogin = (provider: SocialProvider) => {
-    // TODO: Implement social login
-    alert(`Login with ${provider}`);
   };
 
   return (
@@ -60,25 +53,6 @@ export default function LoginPage() {
         <div className="flex justify-between mt-4 text-sm">
           <a href="/auth/forgot-password" className="text-[#FFB32C] hover:underline">Forgot password?</a>
           <a href="/auth/register" className="text-[#FFB32C] hover:underline">Create account</a>
-        </div>
-        <div className="my-6 flex items-center gap-2">
-          <div className="flex-1 h-px bg-white/30" />
-          <span className="text-white/70 text-xs">or sign in with</span>
-          <div className="flex-1 h-px bg-white/30" />
-        </div>
-        <div className="flex gap-4 justify-center">
-          {socialProviders.map((provider) => (
-            <button
-              key={provider}
-              onClick={() => handleSocialLogin(provider)}
-              className="bg-white/80 rounded-full p-3 hover:bg-[#FFB32C] transition"
-              title={`Sign in with ${provider}`}
-              type="button"
-            >
-              {/* Placeholder icons, replace with real icons */}
-              <span className="text-xl font-bold text-[#23223A]">{provider[0]}</span>
-            </button>
-          ))}
         </div>
       </div>
     </PageLayout>

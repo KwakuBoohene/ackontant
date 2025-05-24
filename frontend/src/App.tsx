@@ -5,7 +5,6 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage';
-import SocialAccountsPage from './pages/auth/SocialAccountsPage';
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -47,12 +46,6 @@ const verifyEmailRoute = createRoute({
   component: VerifyEmailPage,
 });
 
-const socialAccountsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/auth/social-accounts',
-  component: SocialAccountsPage,
-});
-
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -60,7 +53,6 @@ const routeTree = rootRoute.addChildren([
   forgotPasswordRoute,
   resetPasswordRoute,
   verifyEmailRoute,
-  socialAccountsRoute,
 ]);
 
 const router = createRouter({ routeTree });

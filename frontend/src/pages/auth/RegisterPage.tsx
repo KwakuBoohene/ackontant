@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import type { RegisterFormData, SocialProvider, AuthError } from '../../types/auth';
+import type { RegisterFormData, AuthError } from '../../types/auth';
 import PageLayout from '../../components/PageLayout';
-
-const socialProviders: SocialProvider[] = ['GOOGLE', 'FACEBOOK', 'GITHUB', 'APPLE'];
 
 export default function RegisterPage() {
   const [form, setForm] = useState<RegisterFormData>({
@@ -24,11 +22,6 @@ export default function RegisterPage() {
     setLoading(true);
     setError({ code: 'INVALID', message: 'Registration failed' });
     setLoading(false);
-  };
-
-  const handleSocialRegister = (provider: SocialProvider) => {
-    // TODO: Implement social register
-    alert(`Register with ${provider}`);
   };
 
   return (
@@ -84,25 +77,6 @@ export default function RegisterPage() {
         </form>
         <div className="flex justify-center mt-4 text-sm">
           <a href="/auth/login" className="text-[#FFB32C] hover:underline">Already have an account? Sign in</a>
-        </div>
-        <div className="my-6 flex items-center gap-2">
-          <div className="flex-1 h-px bg-white/30" />
-          <span className="text-white/70 text-xs">or sign up with</span>
-          <div className="flex-1 h-px bg-white/30" />
-        </div>
-        <div className="flex gap-4 justify-center">
-          {socialProviders.map((provider) => (
-            <button
-              key={provider}
-              onClick={() => handleSocialRegister(provider)}
-              className="bg-white/80 rounded-full p-3 hover:bg-[#FFB32C] transition"
-              title={`Sign up with ${provider}`}
-              type="button"
-            >
-              {/* Placeholder icons, replace with real icons */}
-              <span className="text-xl font-bold text-[#23223A]">{provider[0]}</span>
-            </button>
-          ))}
         </div>
       </div>
     </PageLayout>

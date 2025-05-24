@@ -2,20 +2,9 @@ export interface User {
   id: string;
   email: string;
   isEmailVerified: boolean;
-  socialAccounts: SocialAccount[];
   createdAt: string;
   updatedAt: string;
 }
-
-export interface SocialAccount {
-  provider: SocialProvider;
-  providerUserId: string;
-  email: string;
-  picture?: string;
-  isConnected: boolean;
-}
-
-export type SocialProvider = 'GOOGLE' | 'FACEBOOK' | 'GITHUB' | 'APPLE';
 
 export interface AuthError {
   code: string;
