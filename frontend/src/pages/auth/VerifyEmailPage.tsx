@@ -8,12 +8,9 @@ export default function VerifyEmailPage() {
 
   const handleResend = () => {
     setLoading(true);
-    // TODO: Call resend verification API
-    setTimeout(() => {
-      setLoading(false);
-      setStatus('success');
-      setMessage('Verification email resent. Please check your inbox.');
-    }, 1000);
+    setStatus('success');
+    setMessage('Verification email resent. Please check your inbox.');
+    setLoading(false);
   };
 
   return (

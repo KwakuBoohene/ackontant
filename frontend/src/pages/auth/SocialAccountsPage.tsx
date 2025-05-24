@@ -17,26 +17,22 @@ export default function SocialAccountsPage() {
 
   const handleConnect = (provider: SocialProvider) => {
     setLoading(provider);
-    setTimeout(() => {
-      setAccounts((prev) =>
-        prev.map((acc) =>
-          acc.provider === provider ? { ...acc, isConnected: true, email: 'user@example.com', providerUserId: 'mockid' } : acc
-        )
-      );
-      setLoading(null);
-    }, 1000);
+    setAccounts((prev) =>
+      prev.map((acc) =>
+        acc.provider === provider ? { ...acc, isConnected: true, email: 'user@example.com', providerUserId: 'mockid' } : acc
+      )
+    );
+    setLoading(null);
   };
 
   const handleDisconnect = (provider: SocialProvider) => {
     setLoading(provider);
-    setTimeout(() => {
-      setAccounts((prev) =>
-        prev.map((acc) =>
-          acc.provider === provider ? { ...acc, isConnected: false, email: '', providerUserId: '' } : acc
-        )
-      );
-      setLoading(null);
-    }, 1000);
+    setAccounts((prev) =>
+      prev.map((acc) =>
+        acc.provider === provider ? { ...acc, isConnected: false, email: '', providerUserId: '' } : acc
+      )
+    );
+    setLoading(null);
   };
 
   return (

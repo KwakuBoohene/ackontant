@@ -16,11 +16,8 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // TODO: Call login API
-    setTimeout(() => {
-      setLoading(false);
-      setError({ code: 'INVALID', message: 'Invalid credentials' });
-    }, 1000);
+    setError({ code: 'INVALID', message: 'Invalid credentials' });
+    setLoading(false);
   };
 
   const handleSocialLogin = (provider: SocialProvider) => {

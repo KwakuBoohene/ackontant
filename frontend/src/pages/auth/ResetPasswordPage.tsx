@@ -27,11 +27,8 @@ export default function ResetPasswordPage() {
       return;
     }
     setLoading(true);
-    // TODO: Call reset password API
-    setTimeout(() => {
-      setLoading(false);
-      setSuccess(true);
-    }, 1000);
+    setSuccess(true);
+    setLoading(false);
   };
 
   return (

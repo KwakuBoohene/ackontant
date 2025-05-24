@@ -22,11 +22,8 @@ export default function RegisterPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // TODO: Call register API
-    setTimeout(() => {
-      setLoading(false);
-      setError({ code: 'INVALID', message: 'Registration failed' });
-    }, 1000);
+    setError({ code: 'INVALID', message: 'Registration failed' });
+    setLoading(false);
   };
 
   const handleSocialRegister = (provider: SocialProvider) => {

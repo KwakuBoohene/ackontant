@@ -15,11 +15,8 @@ export default function ForgotPasswordPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // TODO: Call forgot password API
-    setTimeout(() => {
-      setLoading(false);
-      setSent(true);
-    }, 1000);
+    setSent(true);
+    setLoading(false);
   };
 
   return (
