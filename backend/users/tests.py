@@ -1,12 +1,13 @@
 from django.test import TestCase
 from django.urls import reverse
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from django.contrib.auth import get_user_model
-from .models import SocialAuth
+from .models import SocialAuth, User
 import jwt
 from django.conf import settings
 from datetime import datetime, timedelta
+from .serializers import RegisterSerializer
 
 User = get_user_model()
 
@@ -270,3 +271,55 @@ class SocialAuthTests(TestCase):
         self.assertIn('access', response.data)
         self.assertIn('refresh', response.data)
         self.assertIn('user', response.data)
+
+class RegistrationTests(APITestCase):
+    def test_register_success(self):
+        url = reverse('auth-register')
+        data = {
+            'email': 'test@example.com',
+            'password': 'P@ssword@1',
+            'confirm_password': 'P@ssword@1'
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(User.objects.filter(email='test@example.com').exists())
+
+    def test_register_invalid_data(self):
+        url = reverse('auth-register')
+        data = {
+            'email': 'invalid-email',
+            'password': 'P@ssword@1',
+            'confirm_password': 'P@ssword@1'
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_register_password_mismatch(self):
+        url = reverse('auth-register')
+        data = {
+            'email': 'test@example.com',
+            'password': 'P@ssword@1',
+            'confirm_password': 'P@ssword@2'
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_verify_email(self):
+        # First register a user
+        register_url = reverse('auth-register')
+        register_data = {
+            'email': 'test@example.com',
+            'password': 'P@ssword@1',
+            'confirm_password': 'P@ssword@1'
+        }
+        self.client.post(register_url, register_data, format='json')
+        user = User.objects.get(email='test@example.com')
+        token = user.email_verification_token
+
+        # Now verify the email
+        verify_url = reverse('auth-verify-email')
+        verify_data = {'token': token}
+        response = self.client.post(verify_url, verify_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user.refresh_from_db()
+        self.assertTrue(user.is_email_verified)

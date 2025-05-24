@@ -1,6 +1,8 @@
 import React from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend, RadialBarChart, RadialBar } from 'recharts';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from '@tanstack/react-router';
 
 // Sample data for charts
 const balanceData = [
@@ -51,6 +53,18 @@ const wallets = [
   { name: 'FNB ZAR Account', balance: 8000.00, currency: 'ZAR' },
   { name: 'Revolut', balance: 2100.00, currency: 'EUR' },
 ];
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      navigate({ to: '/auth/login' });
+    }
+  }, [isAuthenticated, navigate]);
+  if (!isAuthenticated) return null;
+  return <>{children}</>;
+};
 
 const DashboardPage: React.FC = () => {
   return (
@@ -128,4 +142,8 @@ const DashboardPage: React.FC = () => {
   );
 };
 
-export default DashboardPage; 
+export default (props: any) => (
+  <ProtectedRoute>
+    <DashboardPage {...props} />
+  </ProtectedRoute>
+); 

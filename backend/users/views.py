@@ -15,7 +15,7 @@ from .serializers import (
 )
 from .models import User
 from rest_framework.decorators import action
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiRequest
 
 User = get_user_model()
 
@@ -25,7 +25,7 @@ class AuthViewSet(viewsets.ViewSet):
     @extend_schema(
         summary="Register a new user",
         description="Create a new user account with email and password",
-        request=RegisterSerializer,
+        request=OpenApiRequest(RegisterSerializer),
         responses={201: UserSerializer, 400: None},
         examples=[
             OpenApiExample(
@@ -48,7 +48,7 @@ class AuthViewSet(viewsets.ViewSet):
             # Generate verification token
             token = jwt.encode(
                 {
-                    'user_id': user.id,
+                    'user_id': str(user.id),
                     'exp': datetime.utcnow() + timedelta(hours=24)
                 },
                 settings.SECRET_KEY,
