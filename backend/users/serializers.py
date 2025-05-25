@@ -70,7 +70,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
-        return attrs
+        return attrs 
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)

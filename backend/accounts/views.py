@@ -102,21 +102,21 @@ class AccountViewSet(viewsets.ModelViewSet):
             201: OpenApiResponse(
                 response=AccountSerializer,
                 description="Account created successfully",
-                examples=[
-                    OpenApiExample(
-                        'Success Response',
-                        value={
-                            'id': 'uuid',
-                            'name': 'Savings Account',
+        examples=[
+            OpenApiExample(
+                'Success Response',
+                value={
+                    'id': 'uuid',
+                    'name': 'Savings Account',
                             'type': 'BANK',
-                            'currency': {
-                                'id': 'uuid',
-                                'code': 'USD',
-                                'name': 'US Dollar',
-                                'symbol': '$'
-                            },
-                            'created_at': '2024-03-20T12:00:00Z',
-                            'updated_at': '2024-03-20T12:00:00Z'
+                    'currency': {
+                        'id': 'uuid',
+                        'code': 'USD',
+                        'name': 'US Dollar',
+                        'symbol': '$'
+                    },
+                    'created_at': '2024-03-20T12:00:00Z',
+                    'updated_at': '2024-03-20T12:00:00Z'
                         }
                     )
                 ]
@@ -206,26 +206,26 @@ class ExchangeRateViewSet(viewsets.ModelViewSet):
             201: OpenApiResponse(
                 response=ExchangeRateSerializer,
                 description="Exchange rate created successfully",
-                examples=[
-                    OpenApiExample(
-                        'Success Response',
-                        value={
-                            'id': 'uuid',
-                            'from_currency': {
-                                'id': 'uuid',
-                                'code': 'USD',
-                                'name': 'US Dollar',
-                                'symbol': '$'
-                            },
-                            'to_currency': {
-                                'id': 'uuid',
-                                'code': 'EUR',
-                                'name': 'Euro',
-                                'symbol': '€'
-                            },
-                            'rate': '0.85',
-                            'created_at': '2024-03-20T12:00:00Z',
-                            'updated_at': '2024-03-20T12:00:00Z'
+        examples=[
+            OpenApiExample(
+                'Success Response',
+                value={
+                    'id': 'uuid',
+                    'from_currency': {
+                        'id': 'uuid',
+                        'code': 'USD',
+                        'name': 'US Dollar',
+                        'symbol': '$'
+                    },
+                    'to_currency': {
+                        'id': 'uuid',
+                        'code': 'EUR',
+                        'name': 'Euro',
+                        'symbol': '€'
+                    },
+                    'rate': '0.85',
+                    'created_at': '2024-03-20T12:00:00Z',
+                    'updated_at': '2024-03-20T12:00:00Z'
                         }
                     )
                 ]
