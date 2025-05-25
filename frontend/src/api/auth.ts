@@ -1,7 +1,7 @@
 import api from '../services/api';
 import type { LoginFormData, RegisterFormData, User } from '../types/auth';
 
-const API_URL = '/api/auth';
+const API_URL = '/auth';
 
 export interface AuthResponse {
   user: User;

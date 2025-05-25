@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Transaction, TransactionFormData } from '../types/transaction';
 
-const API_URL = '/api/transactions';
+const API_URL = '/transactions';
 
 export const transactionApi = {
   // Get all transactions with optional filters
