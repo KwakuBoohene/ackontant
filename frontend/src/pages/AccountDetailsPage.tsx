@@ -57,10 +57,14 @@ const AccountDetailsPage: React.FC = () => {
   const debouncedTagSearch = useDebounce(tagSearch, 300);
 
   // Fetch categories/tags from backend using debounced search
-  const { data: categories = [], isLoading: isLoadingCategories } = useCategories(debouncedCategorySearch);
+  const { data: categories = [], isLoading: isLoadingCategories } = useCategories(debouncedCategorySearch || undefined);
   const { mutateAsync: createCategory } = useCreateCategory();
-  const { data: tags = [], isLoading: isLoadingTags } = useTags(debouncedTagSearch);
+  const { data: tags = [], isLoading: isLoadingTags } = useTags(debouncedTagSearch || undefined);
   const { mutateAsync: createTag } = useCreateTag();
+
+  // Dropdown visibility state
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -307,10 +311,11 @@ const AccountDetailsPage: React.FC = () => {
                       setCategorySearch(e.target.value);
                       setNewCategoryName(e.target.value);
                     }}
-                    onFocus={() => setCategorySearch('')}
+                    onFocus={() => setShowCategoryDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowCategoryDropdown(false), 150)}
                   />
                   {/* Dropdown */}
-                  {(categorySearch || isLoadingCategories) && (
+                  {showCategoryDropdown && isModalOpen && (
                     <div className="absolute left-0 right-0 mt-1 bg-[#232b3b] border border-gray-700 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                       {isLoadingCategories ? (
                         <div className="p-2 text-gray-400 text-center">Loading...</div>
@@ -323,13 +328,14 @@ const AccountDetailsPage: React.FC = () => {
                               onClick={() => {
                                 setForm(f => ({ ...f, category_id: c.id }));
                                 setCategorySearch('');
+                                setShowCategoryDropdown(false);
                               }}
                             >
                               {c.name}
                             </div>
                           ))}
-                          {/* Add new option if not found in backend results */}
-                          {!categories.some((c: Category) => c.name.toLowerCase() === categorySearch.toLowerCase()) && categorySearch.trim() && (
+                          {/* Add new option if not found in backend results and user has typed */}
+                          {categorySearch.trim() && !categories.some((c: Category) => c.name.toLowerCase() === categorySearch.toLowerCase()) && (
                             <div
                               className="px-4 py-2 cursor-pointer text-indigo-400 hover:bg-indigo-700"
                               onClick={handleAddCategory}
@@ -368,10 +374,11 @@ const AccountDetailsPage: React.FC = () => {
                       setTagSearch(e.target.value);
                       setNewTagName(e.target.value);
                     }}
-                    onFocus={() => setTagSearch('')}
+                    onFocus={() => setShowTagDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowTagDropdown(false), 150)}
                   />
                   {/* Dropdown */}
-                  {(tagSearch || isLoadingTags) && (
+                  {showTagDropdown && isModalOpen && (
                     <div className="absolute left-0 right-0 mt-1 bg-[#232b3b] border border-gray-700 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                       {isLoadingTags ? (
                         <div className="p-2 text-gray-400 text-center">Loading...</div>
@@ -386,13 +393,14 @@ const AccountDetailsPage: React.FC = () => {
                                   setForm(f => ({ ...f, tag_ids: [...f.tag_ids, t.id] }));
                                 }
                                 setTagSearch('');
+                                setShowTagDropdown(false);
                               }}
                             >
                               {t.name}
                             </div>
                           ))}
-                          {/* Add new option if not found in backend results */}
-                          {!tags.some((t: Tag) => t.name.toLowerCase() === tagSearch.toLowerCase()) && tagSearch.trim() && (
+                          {/* Add new option if not found in backend results and user has typed */}
+                          {tagSearch.trim() && !tags.some((t: Tag) => t.name.toLowerCase() === tagSearch.toLowerCase()) && (
                             <div
                               className="px-4 py-2 cursor-pointer text-indigo-400 hover:bg-indigo-700"
                               onClick={handleAddTag}

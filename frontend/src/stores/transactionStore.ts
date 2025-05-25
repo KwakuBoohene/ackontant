@@ -24,7 +24,7 @@ export const useTransactionStore = create<TransactionState>()(
       fetchTransactions: async (filters = {}) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await api.get('/transactions/', { params: filters });
+          const response = await api.get('/transactions/transactions/', { params: filters });
           const transactions = Array.isArray(response.data) ? response.data : response.data.results || [];
           set({ transactions, isLoading: false });
         } catch (error) {
@@ -36,8 +36,8 @@ export const useTransactionStore = create<TransactionState>()(
       createTransaction: async (data: TransactionFormData) => {
         try {
           set({ isLoading: true, error: null });
-          await api.post('/transactions/', data);
-          const response = await api.get('/transactions/');
+          await api.post('/transactions/transactions/', data);
+          const response = await api.get('/transactions/transactions/');
           const transactions = Array.isArray(response.data) ? response.data : response.data.results || [];
           set({ transactions, isLoading: false });
         } catch (error) {
