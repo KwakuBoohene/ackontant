@@ -33,7 +33,7 @@ export interface Transaction {
 }
 
 export interface TransactionFormData {
-  account: string;
+  account_id: string;
   type: keyof TransactionType;
   amount: number;
   currency: string;

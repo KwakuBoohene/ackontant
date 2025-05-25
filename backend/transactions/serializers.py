@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Transaction, Category, Tag
+from accounts.models import Account
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,6 +25,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     )
     currency = serializers.SerializerMethodField()
     account = serializers.SerializerMethodField()
+    account_id = serializers.UUIDField(write_only=True, required=True)
 
     class Meta:
         model = Transaction
@@ -31,7 +33,7 @@ class TransactionSerializer(serializers.ModelSerializer):
             'id', 'type', 'amount', 'currency', 'base_currency_amount',
             'exchange_rate', 'description', 'date', 'category', 'category_id',
             'tags', 'tag_ids', 'is_recurring', 'recurring_rule', 'is_archived',
-            'account', 'created_at', 'updated_at'
+            'account', 'account_id', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'base_currency_amount', 'exchange_rate']
 
@@ -50,6 +52,13 @@ class TransactionSerializer(serializers.ModelSerializer):
             'type': obj.account.type
         }
 
+    def validate_account_id(self, value):
+        try:
+            Account.objects.get(id=value, user=self.context['request'].user)
+        except Account.DoesNotExist:
+            raise serializers.ValidationError("Account not found")
+        return value
+
     def validate_category_id(self, value):
         if value:
             try:
@@ -65,16 +74,37 @@ class TransactionSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("One or more tags not found")
         return value
 
+    def validate(self, data):
+        # Ensure required fields are present
+        required_fields = ['type', 'amount', 'currency', 'description', 'date', 'account_id']
+        for field in required_fields:
+            if field not in data or data[field] in [None, '']:
+                raise serializers.ValidationError({field: f"{field} is required"})
+        return data
+
     def create(self, validated_data):
         tag_ids = validated_data.pop('tag_ids', [])
         category_id = validated_data.pop('category_id', None)
+        account_id = validated_data.pop('account_id', None)
         
         # Set user from request
         validated_data['user'] = self.context['request'].user
         
+        # Set account from account_id
+        if account_id:
+            validated_data['account'] = Account.objects.get(id=account_id)
+        else:
+            raise serializers.ValidationError({'account_id': 'account_id is required'})
+        
         # Set category if provided
         if category_id:
             validated_data['category'] = Category.objects.get(id=category_id)
+        
+        # Set base_currency_amount and exchange_rate defaults if not provided
+        if 'base_currency_amount' not in validated_data or validated_data.get('base_currency_amount') is None:
+            validated_data['base_currency_amount'] = validated_data['amount']
+        if 'exchange_rate' not in validated_data or validated_data.get('exchange_rate') is None:
+            validated_data['exchange_rate'] = 1
         
         # Create transaction
         transaction = Transaction.objects.create(**validated_data)

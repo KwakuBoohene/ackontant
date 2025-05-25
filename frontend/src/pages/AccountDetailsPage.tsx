@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
-import { useAccountStore } from '../stores/accountStore';
-import { useTransactionStore } from '../stores/transactionStore';
+import { useAccount } from '../hooks/useAccounts';
+import { useTransactions, useCreateTransaction } from '../hooks/useTransactions';
 import type { Transaction } from '../types/transaction';
 import { formatCurrency } from '../utils/currency';
 import DashboardLayout from '../layouts/DashboardLayout';
@@ -20,8 +20,9 @@ const cardColors = [
 
 const AccountDetailsPage: React.FC = () => {
   const { id } = useParams({ from: '/accounts/$id' });
-  const { currentAccount, fetchAccount, isLoading: isAccountLoading, error: accountError } = useAccountStore();
-  const { transactions, fetchTransactions, isLoading: isTransactionsLoading, error: transactionsError, createTransaction } = useTransactionStore();
+  const { data: currentAccount, isLoading: isAccountLoading, error: accountError } = useAccount(id);
+  const { data: transactions = [], isLoading: isTransactionsLoading, error: transactionsError } = useTransactions(id ? { account_id: id } : undefined);
+  const { mutateAsync: createTransaction } = useCreateTransaction();
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,13 +66,6 @@ const AccountDetailsPage: React.FC = () => {
   // Dropdown visibility state
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
-
-  useEffect(() => {
-    if (id) {
-      fetchAccount(id);
-      fetchTransactions({ account_id: id });
-    }
-  }, [id, fetchAccount, fetchTransactions]);
 
   // Reset form on close
   const closeModal = () => {
@@ -125,7 +119,7 @@ const AccountDetailsPage: React.FC = () => {
     setSubmitError(null);
     try {
       await createTransaction({
-        account: currentAccount.id,
+        account_id: currentAccount.id,
         type: form.type,
         amount: Number(form.amount),
         currency: currentAccount.currency.id,
@@ -142,7 +136,7 @@ const AccountDetailsPage: React.FC = () => {
     }
   };
 
-  if (isAccountLoading || isTransactionsLoading) {
+  if (isAccountLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -153,11 +147,12 @@ const AccountDetailsPage: React.FC = () => {
   }
 
   if (accountError || transactionsError) {
+    const errorMsg = (accountError instanceof Error ? accountError.message : accountError) || (transactionsError instanceof Error ? transactionsError.message : transactionsError);
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-red-400">
-            {accountError || transactionsError}
+            {errorMsg}
           </div>
         </div>
       </DashboardLayout>

@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend, RadialBarChart, RadialBar } from 'recharts';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link } from '@tanstack/react-router';
 import UserDropdown from '../components/UserDropdown';
-import { useAccountStore } from '../stores/accountStore';
 import CreateAccountModal from '../components/modals/CreateAccountModal';
 import { formatCurrency } from '../utils/currency';
+import type { Account } from '@/types/accounts';
+import { useAccounts } from '../hooks/useAccounts';
 
 // Sample data for charts
 const balanceData = [
@@ -73,12 +74,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const DashboardPage: React.FC = () => {
-  const { accounts, fetchAccounts, isLoading, error } = useAccountStore();
+  const { data: accounts = [], isLoading, error } = useAccounts();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-  useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
 
   if (isLoading) {
     return (
@@ -89,9 +86,10 @@ const DashboardPage: React.FC = () => {
   }
 
   if (error) {
+    const errorMsg = error instanceof Error ? error.message : error;
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500">{error}</div>
+        <div className="text-red-500">{errorMsg}</div>
       </div>
     );
   }
@@ -123,7 +121,7 @@ const DashboardPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {accounts.map((account) => (
+          {accounts.map((account:Account) => (
             <Link
               key={account.id}
               to="/accounts/$id"

@@ -16,7 +16,7 @@ export const transactionApi = {
     ordering?: string;
   }): Promise<Transaction[]> => {
     const { data } = await api.get(API_URL, { params });
-    return data;
+    return Array.isArray(data) ? data : data.results || [];
   },
 
   // Get transaction by ID
