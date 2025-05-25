@@ -1,39 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '../services/api';
-import type { Currency } from './accountStore';
-
-export interface TransactionType {
-  INCOME: 'Income';
-  EXPENSE: 'Expense';
-  TRANSFER: 'Transfer';
-}
-
-export interface Transaction {
-  id: string;
-  user: string;
-  account: {
-    id: string;
-    name: string;
-  };
-  amount: number;
-  currency: Currency;
-  type: keyof TransactionType;
-  category: string;
-  description: string;
-  date: string;
-  is_recurring: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TransactionFilters {
-  account_id?: string;
-  type?: keyof TransactionType;
-  category?: string;
-  start_date?: string;
-  end_date?: string;
-}
+import type { Transaction, TransactionFormData, TransactionFilters, TransactionType } from '../types/transaction';
 
 interface TransactionState {
   transactions: Transaction[];
@@ -42,7 +10,7 @@ interface TransactionState {
   
   // Actions
   fetchTransactions: (filters?: TransactionFilters) => Promise<void>;
-  createTransaction: (data: any) => Promise<void>;
+  createTransaction: (data: TransactionFormData) => Promise<void>;
   clearError: () => void;
 }
 
@@ -65,7 +33,7 @@ export const useTransactionStore = create<TransactionState>()(
         }
       },
 
-      createTransaction: async (data) => {
+      createTransaction: async (data: TransactionFormData) => {
         try {
           set({ isLoading: true, error: null });
           await api.post('/transactions/', data);

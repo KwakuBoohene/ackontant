@@ -1,15 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '../services/api';
-
-export interface AccountType {
-  CHECKING: 'Checking';
-  SAVINGS: 'Savings';
-  BANK: 'Bank';
-  CREDIT_CARD: 'Credit Card';
-  INVESTMENT: 'Investment';
-  CASH: 'Cash';
-}
+import type { Account, AccountFormData, AccountType } from '../types/accounts';
 
 export interface Currency {
   id: string;
@@ -17,27 +9,6 @@ export interface Currency {
   name: string;
   symbol: string;
   decimal_places: number;
-}
-
-export interface Account {
-  id: string;
-  user: string;
-  name: string;
-  type: keyof AccountType;
-  currency: Currency;
-  initial_balance: number;
-  current_balance: number;
-  base_currency_balance: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AccountFormData {
-  name: string;
-  type: keyof AccountType;
-  currency_id: string;
-  initial_balance: number;
 }
 
 interface AccountState {

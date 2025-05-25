@@ -1,14 +1,6 @@
 import { create } from 'zustand';
 import api from '../services/api';
-
-export interface Currency {
-  id: string;
-  code: string;
-  name: string;
-  symbol: string;
-  decimal_places: number;
-  is_active: boolean;
-}
+import type { Currency } from '../types/currency';
 
 interface CurrencyState {
   currencies: Currency[];

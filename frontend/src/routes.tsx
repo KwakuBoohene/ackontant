@@ -7,6 +7,8 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 import DashboardPage from './pages/DashboardPage';
 import AccountDetailsPage from './pages/AccountDetailsPage';
+import { createRouter } from '@tanstack/react-router';
+
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -69,4 +71,12 @@ export const routeTree = rootRoute.addChildren([
   verifyEmailRoute,
   dashboardRoute,
   accountDetailsRoute,
-]); 
+]);
+
+export const router = createRouter({ routeTree });
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+} 
