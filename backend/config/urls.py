@@ -27,8 +27,7 @@ urlpatterns = [
     # Authentication endpoints
     path('api/', include('users.urls')),
     path('api/', include('accounts.urls')),
-    # TODO: Implement transactions app
-    # path('api/', include('transactions.urls')),
+    path('api/transactions/', include('transactions.urls')),
     path('api/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     

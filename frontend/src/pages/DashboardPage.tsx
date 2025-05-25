@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend, RadialBarChart, RadialBar } from 'recharts';
 import { useAuthStore } from '../stores/authStore';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, Link } from '@tanstack/react-router';
 import UserDropdown from '../components/UserDropdown';
 import { useAccountStore } from '../stores/accountStore';
 import CreateAccountModal from '../components/CreateAccountModal';
+import { formatCurrency } from '../utils/currency';
 
 // Sample data for charts
 const balanceData = [
@@ -79,30 +80,43 @@ const DashboardPage: React.FC = () => {
     fetchAccounts();
   }, [fetchAccounts]);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-white">Accounts</h1>
         {accounts.length > 0 && (
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 bg-[#FFB32C] text-white rounded-md hover:bg-[#FFB32C]/90"
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark"
           >
             Add Account
           </button>
         )}
       </div>
 
-      {isLoading ? (
-        <div className="text-white">Loading accounts...</div>
-      ) : error ? (
-        <div className="text-red-500">{error}</div>
-      ) : accounts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 bg-[#1e293b] rounded-lg">
-          <p className="text-white text-lg mb-4">No accounts available</p>
+      {accounts.length === 0 ? (
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold mb-4">No Accounts Yet</h2>
+          <p className="text-gray-600 mb-6">Add your first account to start tracking your finances.</p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-4 py-2 bg-[#FFB32C] text-white rounded-md hover:bg-[#FFB32C]/90"
+            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-dark"
           >
             Add Your First Account
           </button>
@@ -110,9 +124,11 @@ const DashboardPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {accounts.map((account) => (
-            <div
+            <Link
               key={account.id}
-              className="bg-[#1e293b] rounded-lg p-6 shadow-lg"
+              to="/accounts/$id"
+              params={{ id: account.id }}
+              className="bg-[#1e293b] rounded-lg p-6 shadow-lg hover:bg-[#1e293b]/90 transition-colors cursor-pointer"
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -125,18 +141,17 @@ const DashboardPage: React.FC = () => {
                 <div>
                   <p className="text-gray-400 text-sm">Current Balance</p>
                   <p className="text-white text-xl font-semibold">
-                    {account.currency.symbol}
-                    {account.current_balance.toLocaleString()}
+                    {formatCurrency(account.current_balance, account.currency)}
                   </p>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Base Currency Balance</p>
                   <p className="text-white text-lg">
-                    {account.base_currency_balance.toLocaleString()}
+                    {formatCurrency(account.base_currency_balance, account.currency)}
                   </p>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
