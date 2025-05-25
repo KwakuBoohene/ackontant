@@ -89,7 +89,13 @@ const AccountDetailsPage: React.FC = () => {
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
     try {
-      const newCat = await createCategory({ name: newCategoryName, type: form.type, color: '#8884d8', icon: '', is_default: false });
+      const newCat = await createCategory({
+        name: newCategoryName,
+        type: form.type,
+        color: '#8884d8',
+        icon: '',
+        is_active: true
+      });
       setForm(f => ({ ...f, category_id: newCat.id }));
       setNewCategoryName('');
       setCategorySearch('');
@@ -102,7 +108,11 @@ const AccountDetailsPage: React.FC = () => {
   const handleAddTag = async () => {
     if (!newTagName.trim()) return;
     try {
-      const newTag = await createTag({ name: newTagName, color: '#8884d8' });
+      const newTag = await createTag({
+        name: newTagName,
+        color: '#8884d8',
+        is_active: true
+      });
       setForm(f => ({ ...f, tag_ids: [...f.tag_ids, newTag.id] }));
       setNewTagName('');
       setTagSearch('');
@@ -122,11 +132,13 @@ const AccountDetailsPage: React.FC = () => {
         account_id: currentAccount.id,
         type: form.type,
         amount: Number(form.amount),
-        currency: currentAccount.currency.id,
+        currency_id: currentAccount.currency.id,
         description: form.description,
         date: form.date,
         category_id: form.category_id || undefined,
         tag_ids: form.tag_ids.length ? form.tag_ids : undefined,
+        is_recurring: false,
+        is_archived: false
       });
       closeModal();
     } catch (err: any) {

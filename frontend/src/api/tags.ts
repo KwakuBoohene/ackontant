@@ -2,7 +2,7 @@
 import type { Tag, TagFormData } from '../types/tag';
 import api from '../services/api';
 
-const API_URL = '/transactions/tags';
+const API_URL = '/transactions/tags/';
 
 export const tagApi = {
   getTags: async (params?: { search?: string }) => {

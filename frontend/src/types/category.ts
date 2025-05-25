@@ -19,7 +19,7 @@ export interface CategoryFormData {
   parent_id?: string | null;
   color: string;
   icon: string;
-  is_default: boolean;
+  is_active: boolean;
 }
 
 export interface CategoryFilters {

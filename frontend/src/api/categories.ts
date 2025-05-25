@@ -1,7 +1,7 @@
 import api from '../services/api';
 import type { Category, CategoryFormData } from '../types/category';
 
-const API_URL = '/transactions/categories';
+const API_URL = '/transactions/categories/';
 
 export const categoryApi = {
   getCategories: async (params?: { search?: string }) => {
@@ -23,4 +23,4 @@ export const categoryApi = {
   deleteCategory: async (id: string): Promise<void> => {
     await api.delete(`${API_URL}/${id}/`);
   },
-}; 
+};  

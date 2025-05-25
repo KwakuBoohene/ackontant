@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Transaction, Category, Tag
-from accounts.models import Account
+from accounts.models import Account, Currency
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,11 +8,19 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'type', 'color', 'icon', 'is_active']
         read_only_fields = ['id']
 
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ['id', 'name', 'color', 'is_active']
         read_only_fields = ['id']
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
 
 class TransactionSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
@@ -24,13 +32,14 @@ class TransactionSerializer(serializers.ModelSerializer):
         required=False
     )
     currency = serializers.SerializerMethodField()
+    currency_id = serializers.UUIDField(write_only=True, required=True)
     account = serializers.SerializerMethodField()
     account_id = serializers.UUIDField(write_only=True, required=True)
 
     class Meta:
         model = Transaction
         fields = [
-            'id', 'type', 'amount', 'currency', 'base_currency_amount',
+            'id', 'type', 'amount', 'currency', 'currency_id', 'base_currency_amount',
             'exchange_rate', 'description', 'date', 'category', 'category_id',
             'tags', 'tag_ids', 'is_recurring', 'recurring_rule', 'is_archived',
             'account', 'account_id', 'created_at', 'updated_at'
@@ -59,6 +68,13 @@ class TransactionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Account not found")
         return value
 
+    def validate_currency_id(self, value):
+        try:
+            Currency.objects.get(id=value)
+        except Currency.DoesNotExist:
+            raise serializers.ValidationError("Currency not found")
+        return value
+
     def validate_category_id(self, value):
         if value:
             try:
@@ -76,7 +92,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         # Ensure required fields are present
-        required_fields = ['type', 'amount', 'currency', 'description', 'date', 'account_id']
+        required_fields = ['type', 'amount', 'currency_id', 'description', 'date', 'account_id']
         for field in required_fields:
             if field not in data or data[field] in [None, '']:
                 raise serializers.ValidationError({field: f"{field} is required"})
@@ -86,6 +102,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         tag_ids = validated_data.pop('tag_ids', [])
         category_id = validated_data.pop('category_id', None)
         account_id = validated_data.pop('account_id', None)
+        currency_id = validated_data.pop('currency_id', None)
         
         # Set user from request
         validated_data['user'] = self.context['request'].user
@@ -95,6 +112,12 @@ class TransactionSerializer(serializers.ModelSerializer):
             validated_data['account'] = Account.objects.get(id=account_id)
         else:
             raise serializers.ValidationError({'account_id': 'account_id is required'})
+        
+        # Set currency from currency_id
+        if currency_id:
+            validated_data['currency'] = Currency.objects.get(id=currency_id)
+        else:
+            raise serializers.ValidationError({'currency_id': 'currency_id is required'})
         
         # Set category if provided
         if category_id:
@@ -118,10 +141,15 @@ class TransactionSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         tag_ids = validated_data.pop('tag_ids', None)
         category_id = validated_data.pop('category_id', None)
+        currency_id = validated_data.pop('currency_id', None)
         
         # Update category if provided
         if category_id is not None:
             instance.category = Category.objects.get(id=category_id) if category_id else None
+            
+        # Update currency if provided
+        if currency_id is not None:
+            instance.currency = Currency.objects.get(id=currency_id)
         
         # Update other fields
         for attr, value in validated_data.items():

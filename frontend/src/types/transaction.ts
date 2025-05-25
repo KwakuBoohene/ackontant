@@ -36,13 +36,14 @@ export interface TransactionFormData {
   account_id: string;
   type: keyof TransactionType;
   amount: number;
-  currency: string;
+  currency_id: string;
   description: string;
   date: string;
   category_id?: string | null;
   tag_ids?: string[];
   is_recurring?: boolean;
   recurring_rule?: any;
+  is_archived?: boolean;
 }
 
 export interface TransactionFilters {
