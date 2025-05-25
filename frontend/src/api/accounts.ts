@@ -18,7 +18,7 @@ export const accountApi = {
 
   // Create new account
   createAccount: async (accountData: AccountFormData): Promise<Account> => {
-    const { data } = await api.post(API_URL, accountData);
+    const { data } = await api.post(API_URL+'/', accountData);
     return data;
   },
 

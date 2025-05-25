@@ -10,7 +10,7 @@ class Transaction(UUIDModel):
     ]
 
     user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='transactions')
-    account = models.ForeignKey('accounts.Account', on_delete=models.PROTECT, related_name='transactions')
+    account = models.ForeignKey('accounts.Account', on_delete=models.CASCADE, related_name='transactions')
     type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
     amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
     currency = models.ForeignKey('accounts.Currency', on_delete=models.PROTECT, related_name='transactions')

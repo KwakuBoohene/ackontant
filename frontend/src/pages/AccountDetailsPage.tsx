@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from '@tanstack/react-router';
+import { Link, useParams, useNavigate } from '@tanstack/react-router';
 import { useAccount } from '../hooks/useAccounts';
-import { useTransactions, useCreateTransaction } from '../hooks/useTransactions';
+import { useTransactions, useCreateTransaction, useUpdateTransaction, useDeleteTransaction } from '../hooks/useTransactions';
+import { useDeleteAccount } from '../hooks/useAccounts';
 import type { Transaction } from '../types/transaction';
 import { formatCurrency } from '../utils/currency';
 import DashboardLayout from '../layouts/DashboardLayout';
-import { BanknotesIcon, CurrencyDollarIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { BanknotesIcon, CurrencyDollarIcon, ChartBarIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import Modal from '../components/modals/Modal';
 import { useCategories, useCreateCategory } from '../hooks/useCategories';
 import { useTags, useCreateTag } from '../hooks/useTags';
@@ -23,9 +24,16 @@ const AccountDetailsPage: React.FC = () => {
   const { data: currentAccount, isLoading: isAccountLoading, error: accountError } = useAccount(id);
   const { data: transactions = [], isLoading: isTransactionsLoading, error: transactionsError } = useTransactions(id ? { account_id: id } : undefined);
   const { mutateAsync: createTransaction } = useCreateTransaction();
+  const { mutateAsync: updateTransaction } = useUpdateTransaction();
+  const { mutateAsync: deleteTransaction } = useDeleteTransaction();
+  const { mutateAsync: deleteAccount } = useDeleteAccount();
+  const navigate = useNavigate();
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [form, setForm] = useState({
     amount: '',
     type: 'INCOME' as keyof import('../types/transaction').TransactionType,
@@ -148,6 +156,89 @@ const AccountDetailsPage: React.FC = () => {
     }
   };
 
+  // Open edit modal with transaction data
+  const openEditModal = (transaction: Transaction) => {
+    setTransactionToEdit(transaction);
+    setForm({
+      amount: transaction.amount.toString(),
+      type: transaction.type,
+      date: transaction.date,
+      description: transaction.description,
+      category_id: transaction.category?.id || '',
+      tag_ids: transaction.tags.map(t => t.id),
+    });
+    setIsModalOpen(true);
+  };
+
+  // Open delete modal
+  const openDeleteModal = (transaction: Transaction) => {
+    setTransactionToDelete(transaction);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Handle delete confirm
+  const handleDelete = async () => {
+    if (!transactionToDelete) return;
+    try {
+      await deleteTransaction(transactionToDelete.id);
+      setIsDeleteModalOpen(false);
+      setTransactionToDelete(null);
+    } catch (err) {
+      // Optionally show error
+    }
+  };
+
+  // Handle edit submit
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transactionToEdit || !currentAccount) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await updateTransaction({
+        id: transactionToEdit.id,
+        data: {
+          account_id: currentAccount.id,
+          type: form.type,
+          amount: Number(form.amount),
+          currency_id: currentAccount.currency.id,
+          description: form.description,
+          date: form.date,
+          category_id: form.category_id || undefined,
+          tag_ids: form.tag_ids.length ? form.tag_ids : undefined,
+          is_recurring: transactionToEdit.is_recurring,
+          is_archived: transactionToEdit.is_archived,
+        },
+      });
+      setIsModalOpen(false);
+      setTransactionToEdit(null);
+    } catch (err: any) {
+      setSubmitError(err?.message || 'Failed to update transaction');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle account delete
+  const handleDeleteAccount = async () => {
+    if (!currentAccount) return;
+    setIsDeletingAccount(true);
+    setDeleteAccountError(null);
+    try {
+      await deleteAccount(currentAccount.id);
+      setIsDeleteAccountModalOpen(false);
+      navigate({ to: '/dashboard' });
+    } catch (err: any) {
+      setDeleteAccountError(err?.message || 'Failed to delete account');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null);
+
   if (isAccountLoading) {
     return (
       <DashboardLayout>
@@ -243,6 +334,15 @@ const AccountDetailsPage: React.FC = () => {
             <div className="text-gray-400 text-xs uppercase">Status</div>
             <div className={`text-base font-semibold ${currentAccount.is_active ? 'text-green-400' : 'text-red-400'}`}>{currentAccount.is_active ? 'Active' : 'Inactive'}</div>
           </div>
+          <div className="ml-auto flex items-center">
+            <button
+              className="p-2 rounded-full hover:bg-red-700 focus:outline-none"
+              title="Delete Account"
+              onClick={() => setIsDeleteAccountModalOpen(true)}
+            >
+              <TrashIcon className="h-6 w-6 text-red-400" />
+            </button>
+          </div>
         </div>
 
         {/* Transactions Table */}
@@ -251,16 +351,21 @@ const AccountDetailsPage: React.FC = () => {
             <h2 className="text-xl font-bold text-white">Transactions</h2>
             <button
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setTransactionToEdit(null);
+                setIsModalOpen(true);
+              }}
             >
               Add Transaction
             </button>
           </div>
 
-          {/* DaisyUI Modal */}
-          <Modal isOpen={isModalOpen} onClose={closeModal}>
-            <h3 className="font-bold text-xl text-center mb-6 text-white">Add Transaction</h3>
-            <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Transaction Modal (Create/Edit) */}
+          <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setTransactionToEdit(null); }}>
+            <h3 className="font-bold text-xl text-center mb-6 text-white">
+              {transactionToEdit ? 'Edit Transaction' : 'Add Transaction'}
+            </h3>
+            <form onSubmit={transactionToEdit ? handleEditSubmit : handleSubmit} className="space-y-5">
               <div>
                 <label className="block mb-1 text-gray-300">Amount</label>
                 <input
@@ -444,7 +549,7 @@ const AccountDetailsPage: React.FC = () => {
                 <button
                   type="button"
                   className="btn btn-ghost px-6 py-2 rounded-lg text-gray-300 hover:text-white"
-                  onClick={closeModal}
+                  onClick={() => { setIsModalOpen(false); setTransactionToEdit(null); }}
                   disabled={isSubmitting}
                 >
                   Cancel
@@ -454,10 +559,61 @@ const AccountDetailsPage: React.FC = () => {
                   className="btn px-6 py-2 rounded-lg bg-indigo-500 border-none text-white font-semibold hover:bg-indigo-600 shadow-md"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Adding...' : 'Save'}
+                  {isSubmitting ? (transactionToEdit ? 'Updating...' : 'Adding...') : (transactionToEdit ? 'Update' : 'Save')}
                 </button>
               </div>
             </form>
+          </Modal>
+
+          {/* Delete Confirmation Modal */}
+          <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
+            <div className="text-center">
+              <TrashIcon className="h-12 w-12 mx-auto text-red-500 mb-4" />
+              <h3 className="text-lg font-bold text-white mb-2">Delete Transaction?</h3>
+              <p className="text-gray-300 mb-6">Are you sure you want to delete this transaction? This action cannot be undone.</p>
+              <div className="flex justify-center gap-4">
+                <button
+                  className="btn btn-ghost px-6 py-2 rounded-lg text-gray-300 hover:text-white"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn px-6 py-2 rounded-lg bg-red-600 border-none text-white font-semibold hover:bg-red-700 shadow-md"
+                  onClick={handleDelete}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </Modal>
+
+          {/* Delete Account Modal */}
+          <Modal isOpen={isDeleteAccountModalOpen} onClose={() => setIsDeleteAccountModalOpen(false)}>
+            <div className="text-center">
+              <TrashIcon className="h-12 w-12 mx-auto text-red-500 mb-4" />
+              <h3 className="text-lg font-bold text-white mb-2">Delete Account?</h3>
+              <p className="text-gray-300 mb-4">
+                Deleting this account will <span className="text-red-400 font-semibold">permanently delete all transactions</span> associated with it. This action cannot be undone.
+              </p>
+              {deleteAccountError && <div className="text-red-400 mb-2">{deleteAccountError}</div>}
+              <div className="flex justify-center gap-4">
+                <button
+                  className="btn btn-ghost px-6 py-2 rounded-lg text-gray-300 hover:text-white"
+                  onClick={() => setIsDeleteAccountModalOpen(false)}
+                  disabled={isDeletingAccount}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn px-6 py-2 rounded-lg bg-red-600 border-none text-white font-semibold hover:bg-red-700 shadow-md"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount}
+                >
+                  {isDeletingAccount ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
           </Modal>
 
           {transactions.length === 0 ? (
@@ -472,6 +628,7 @@ const AccountDetailsPage: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Category</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Type</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#232b3b]">
@@ -492,6 +649,22 @@ const AccountDetailsPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">{formatCurrency(transaction.amount, transaction.currency)}</td>
+                      <td className="px-6 py-4 text-center flex gap-2 justify-center">
+                        <button
+                          className="p-1 rounded hover:bg-indigo-700"
+                          onClick={() => openEditModal(transaction)}
+                          title="Edit"
+                        >
+                          <PencilSquareIcon className="h-5 w-5 text-indigo-400" />
+                        </button>
+                        <button
+                          className="p-1 rounded hover:bg-red-700"
+                          onClick={() => openDeleteModal(transaction)}
+                          title="Delete"
+                        >
+                          <TrashIcon className="h-5 w-5 text-red-400" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
