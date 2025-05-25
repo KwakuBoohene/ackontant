@@ -1,45 +1,22 @@
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import api from '../services/api';
+import { authApi } from '../api/auth';
 import { useAuthStore } from '../stores/authStore';
-
-interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-interface RegisterCredentials extends LoginCredentials {
-  first_name: string;
-  last_name: string;
-}
+import type { LoginFormData, RegisterFormData } from '../types/auth';
 
 export const useLogin = () => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
 
   return useMutation({
-    mutationFn: async (credentials: LoginCredentials) => {
-      console.log('Attempting login with:', { email: credentials.email });
-      const response = await api.post('/auth/login/', credentials);
-      console.log('Login response:', response.data);
-      return response.data;
-    },
+    mutationFn: authApi.login,
     onSuccess: (response) => {
-      console.log('Login successful, updating store...');
       login(response.user, response.access, response.refresh);
       // Small delay to ensure store is updated
       setTimeout(() => {
-        console.log('Navigating to dashboard...');
         navigate({ to: '/dashboard' });
       }, 100);
     },
-    onError: (error: any) => {
-      console.error('Login mutation error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
-    }
   });
 };
 
@@ -48,27 +25,45 @@ export const useRegister = () => {
   const login = useAuthStore((state) => state.login);
 
   return useMutation({
-    mutationFn: async (credentials: RegisterCredentials) => {
-      console.log('Attempting registration with:', { email: credentials.email });
-      const response = await api.post('/auth/register/', credentials);
-      console.log('Registration response:', response.data);
-      return response.data;
-    },
+    mutationFn: authApi.register,
     onSuccess: (response) => {
-      console.log('Registration successful, updating store...');
       login(response.user, response.access, response.refresh);
       // Small delay to ensure store is updated
       setTimeout(() => {
-        console.log('Navigating to dashboard...');
         navigate({ to: '/dashboard' });
       }, 100);
     },
-    onError: (error: any) => {
-      console.error('Registration mutation error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
-    }
+  });
+};
+
+export const useLogout = () => {
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
+
+  return useMutation({
+    mutationFn: (refreshToken: string) => authApi.logout(refreshToken),
+    onSuccess: () => {
+      logout();
+      navigate({ to: '/auth/login' });
+    },
+  });
+};
+
+export const useVerifyEmail = () => {
+  return useMutation({
+    mutationFn: (token: string) => authApi.verifyEmail(token),
+  });
+};
+
+export const useRequestPasswordReset = () => {
+  return useMutation({
+    mutationFn: (email: string) => authApi.requestPasswordReset(email),
+  });
+};
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: ({ token, password }: { token: string; password: string }) =>
+      authApi.resetPassword(token, password),
   });
 }; 

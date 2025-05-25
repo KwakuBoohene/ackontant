@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
 import { useAccountStore } from '../stores/accountStore';
 import { useTransactionStore } from '../stores/transactionStore';
-import type { Transaction } from '../stores/transactionStore';
+import type { Transaction } from '../types/transaction';
 import { formatCurrency } from '../utils/currency';
 
 const AccountDetailsPage: React.FC = () => {
@@ -125,7 +125,7 @@ const AccountDetailsPage: React.FC = () => {
                       {transaction.description}
                     </td>
                     <td className="px-6 py-4">
-                      {transaction.category}
+                      {transaction.category?.name || 'Uncategorized'}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

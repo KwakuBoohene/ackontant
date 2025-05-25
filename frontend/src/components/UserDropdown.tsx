@@ -32,7 +32,7 @@ export default function UserDropdown() {
         className="flex items-center space-x-2 text-[#333] hover:text-[#FFB32C] transition-colors"
         style={{ fontWeight: 500 }}
       >
-        <span>Welcome, {user?.first_name}</span>
+        <span>Welcome, {user?.email}</span>
         <svg
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"

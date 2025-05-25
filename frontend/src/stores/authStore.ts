@@ -1,13 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import api from '../services/api';
-
-interface User {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-}
+import type { User } from '../types/auth';
 
 interface AuthState {
   user: User | null;
@@ -15,7 +8,7 @@ interface AuthState {
   refreshToken: string | null;
   isAuthenticated: boolean;
   setAuth: (user: User, access: string, refresh: string) => void;
-  logout: () => Promise<void>;
+  logout: () => void;
   login: (user: User, access: string, refresh: string) => void;
 }
 
@@ -26,6 +19,14 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+      login: (user, access, refresh) => {
+        set({
+          user,
+          accessToken: access,
+          refreshToken: refresh,
+          isAuthenticated: true,
+        });
+      },
       setAuth: (user, access, refresh) => {
         set({
           user,
@@ -34,35 +35,13 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
         });
       },
-      logout: async () => {
-        try {
-          const state = useAuthStore.getState();
-          const refreshToken = state.refreshToken;
-          const accessToken = state.accessToken;
-          
-          if (refreshToken && accessToken) {
-            await api.post('/auth/logout/', 
-              { refresh: refreshToken },
-              { headers: { Authorization: `Bearer ${accessToken}` } }
-            );
-          }
-        } catch (error) {
-          console.error('Logout error:', error);
-        } finally {
-          set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
-            isAuthenticated: false,
-          });
-        }
-      },
-      login: (user, access, refresh) => {
+
+      logout: () => {
         set({
-          user,
-          accessToken: access,
-          refreshToken: refresh,
-          isAuthenticated: true,
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
         });
       },
     }),

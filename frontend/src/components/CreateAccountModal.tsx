@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAccountStore } from '../stores/accountStore';
 import { useCurrencyStore } from '../stores/currencyStore';
-import type { AccountFormData } from '../stores/accountStore';
+import type { AccountFormData } from '../types/accounts';
 
 interface CreateAccountModalProps {
   isOpen: boolean;
