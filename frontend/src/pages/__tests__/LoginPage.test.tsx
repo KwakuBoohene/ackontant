@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import LoginPage from '../../pages/auth/LoginPage';
-import PageLayout from '../../components/PageLayout';
+import PageLayout from '../../layouts/PageLayout';
 import "@testing-library/jest-dom";
 
 describe('LoginPage', () => {

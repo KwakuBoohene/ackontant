@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import ResetPasswordPage from '../auth/ResetPasswordPage';
-import PageLayout from '../../components/PageLayout';
+import PageLayout from '../../layouts/PageLayout';
 import "@testing-library/jest-dom";
 
 describe('ResetPasswordPage', () => {

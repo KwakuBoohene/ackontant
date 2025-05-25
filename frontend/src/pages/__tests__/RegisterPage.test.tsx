@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import RegisterPage from '../auth/RegisterPage';
-import PageLayout from '../../components/PageLayout';
+import PageLayout from '../../layouts/PageLayout';
 import "@testing-library/jest-dom";
 
 describe('RegisterPage', () => {

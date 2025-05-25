@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import VerifyEmailPage from '../auth/VerifyEmailPage';
-import PageLayout from '../../components/PageLayout';
+import PageLayout from '../../layouts/PageLayout';
 import "@testing-library/jest-dom";
 
 describe('VerifyEmailPage', () => {
