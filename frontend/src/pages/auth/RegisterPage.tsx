@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { RegisterFormData, AuthError } from '../../types/auth';
-import PageLayout from '../../components/PageLayout';
+import PageLayout from '../../layouts/PageLayout';
 
 export default function RegisterPage() {
   const [form, setForm] = useState<RegisterFormData>({

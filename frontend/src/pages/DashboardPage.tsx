@@ -5,7 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigate, Link } from '@tanstack/react-router';
 import UserDropdown from '../components/UserDropdown';
 import { useAccountStore } from '../stores/accountStore';
-import CreateAccountModal from '../components/CreateAccountModal';
+import CreateAccountModal from '../components/modals/CreateAccountModal';
 import { formatCurrency } from '../utils/currency';
 
 // Sample data for charts
@@ -149,10 +149,10 @@ const DashboardPage: React.FC = () => {
                   <p className="text-white text-lg">
                     {formatCurrency(account.base_currency_balance, account.currency)}
                   </p>
-                </div>
-              </div>
+        </div>
+      </div>
             </Link>
-          ))}
+                ))}
         </div>
       )}
 
