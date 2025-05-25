@@ -7,6 +7,10 @@ import { formatCurrency } from '../utils/currency';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { BanknotesIcon, CurrencyDollarIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import Modal from '../components/modals/Modal';
+import { useCategories, useCreateCategory } from '../hooks/useCategories';
+import { useTags, useCreateTag } from '../hooks/useTags';
+import type { Category } from '../types/category';
+import type { Tag } from '../types/tag';
 
 const cardColors = [
   'bg-gradient-to-r from-blue-700 to-blue-500',
@@ -27,10 +31,36 @@ const AccountDetailsPage: React.FC = () => {
     date: new Date().toISOString().slice(0, 10),
     description: '',
     category_id: '',
-    tag_ids: [],
+    tag_ids: [] as string[],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Debounce utility
+  function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+      const handler = setTimeout(() => setDebouncedValue(value), delay);
+      return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
+  }
+
+  // Category/tag search and creation state
+  const [categorySearch, setCategorySearch] = useState('');
+  const [tagSearch, setTagSearch] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newTagName, setNewTagName] = useState('');
+
+  // Debounced search values
+  const debouncedCategorySearch = useDebounce(categorySearch, 300);
+  const debouncedTagSearch = useDebounce(tagSearch, 300);
+
+  // Fetch categories/tags from backend using debounced search
+  const { data: categories = [], isLoading: isLoadingCategories } = useCategories(debouncedCategorySearch);
+  const { mutateAsync: createCategory } = useCreateCategory();
+  const { data: tags = [], isLoading: isLoadingTags } = useTags(debouncedTagSearch);
+  const { mutateAsync: createTag } = useCreateTag();
 
   useEffect(() => {
     if (id) {
@@ -50,7 +80,37 @@ const AccountDetailsPage: React.FC = () => {
       category_id: '',
       tag_ids: [],
     });
+    setCategorySearch('');
+    setTagSearch('');
+    setNewCategoryName('');
+    setNewTagName('');
     setSubmitError(null);
+  };
+
+  // Add new category
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    try {
+      const newCat = await createCategory({ name: newCategoryName, type: form.type, color: '#8884d8', icon: '', is_default: false });
+      setForm(f => ({ ...f, category_id: newCat.id }));
+      setNewCategoryName('');
+      setCategorySearch('');
+    } catch (err) {
+      setSubmitError('Failed to add category');
+    }
+  };
+
+  // Add new tag
+  const handleAddTag = async () => {
+    if (!newTagName.trim()) return;
+    try {
+      const newTag = await createTag({ name: newTagName, color: '#8884d8' });
+      setForm(f => ({ ...f, tag_ids: [...f.tag_ids, newTag.id] }));
+      setNewTagName('');
+      setTagSearch('');
+    } catch (err) {
+      setSubmitError('Failed to add tag');
+    }
   };
 
   // Handle form submit
@@ -235,7 +295,135 @@ const AccountDetailsPage: React.FC = () => {
                   required
                 />
               </div>
-              {/* Category and tags can be added here if available */}
+              <div>
+                <label className="block mb-1 text-gray-300">Category</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-lg bg-[#232b3b] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Search or add category..."
+                    value={categorySearch}
+                    onChange={e => {
+                      setCategorySearch(e.target.value);
+                      setNewCategoryName(e.target.value);
+                    }}
+                    onFocus={() => setCategorySearch('')}
+                  />
+                  {/* Dropdown */}
+                  {(categorySearch || isLoadingCategories) && (
+                    <div className="absolute left-0 right-0 mt-1 bg-[#232b3b] border border-gray-700 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                      {isLoadingCategories ? (
+                        <div className="p-2 text-gray-400 text-center">Loading...</div>
+                      ) : (
+                        <>
+                          {categories.map((c: Category) => (
+                            <div
+                              key={c.id}
+                              className={`px-4 py-2 cursor-pointer hover:bg-indigo-600 ${form.category_id === c.id ? 'bg-indigo-700 text-white' : 'text-gray-200'}`}
+                              onClick={() => {
+                                setForm(f => ({ ...f, category_id: c.id }));
+                                setCategorySearch('');
+                              }}
+                            >
+                              {c.name}
+                            </div>
+                          ))}
+                          {/* Add new option if not found in backend results */}
+                          {!categories.some((c: Category) => c.name.toLowerCase() === categorySearch.toLowerCase()) && categorySearch.trim() && (
+                            <div
+                              className="px-4 py-2 cursor-pointer text-indigo-400 hover:bg-indigo-700"
+                              onClick={handleAddCategory}
+                            >
+                              + Add "{categorySearch}"
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {/* Show selected category as chip */}
+                  {form.category_id && (
+                    <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-indigo-700 text-white text-xs">
+                      {categories.find((c: Category) => c.id === form.category_id)?.name || 'Selected'}
+                      <button
+                        type="button"
+                        className="ml-2 text-white hover:text-gray-300"
+                        onClick={() => setForm(f => ({ ...f, category_id: '' }))}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block mb-1 text-gray-300">Tags</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2 rounded-lg bg-[#232b3b] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Search or add tags..."
+                    value={tagSearch}
+                    onChange={e => {
+                      setTagSearch(e.target.value);
+                      setNewTagName(e.target.value);
+                    }}
+                    onFocus={() => setTagSearch('')}
+                  />
+                  {/* Dropdown */}
+                  {(tagSearch || isLoadingTags) && (
+                    <div className="absolute left-0 right-0 mt-1 bg-[#232b3b] border border-gray-700 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                      {isLoadingTags ? (
+                        <div className="p-2 text-gray-400 text-center">Loading...</div>
+                      ) : (
+                        <>
+                          {tags.map((t: Tag) => (
+                            <div
+                              key={t.id}
+                              className={`px-4 py-2 cursor-pointer hover:bg-indigo-600 ${form.tag_ids.includes(t.id) ? 'bg-indigo-700 text-white' : 'text-gray-200'}`}
+                              onClick={() => {
+                                if (!form.tag_ids.includes(t.id)) {
+                                  setForm(f => ({ ...f, tag_ids: [...f.tag_ids, t.id] }));
+                                }
+                                setTagSearch('');
+                              }}
+                            >
+                              {t.name}
+                            </div>
+                          ))}
+                          {/* Add new option if not found in backend results */}
+                          {!tags.some((t: Tag) => t.name.toLowerCase() === tagSearch.toLowerCase()) && tagSearch.trim() && (
+                            <div
+                              className="px-4 py-2 cursor-pointer text-indigo-400 hover:bg-indigo-700"
+                              onClick={handleAddTag}
+                            >
+                              + Add "{tagSearch}"
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {/* Show selected tags as chips */}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {form.tag_ids.map(tagId => {
+                      const tag = tags.find((t: Tag) => t.id === tagId);
+                      return (
+                        <span key={tagId} className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-700 text-white text-xs">
+                          {tag?.name || 'Tag'}
+                          <button
+                            type="button"
+                            className="ml-2 text-white hover:text-gray-300"
+                            onClick={() => setForm(f => ({ ...f, tag_ids: f.tag_ids.filter(id => id !== tagId) }))}
+                          >
+                            &times;
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
               {submitError && <div className="text-red-400 text-sm text-center">{submitError}</div>}
               <div className="flex justify-end gap-3 pt-2">
                 <button

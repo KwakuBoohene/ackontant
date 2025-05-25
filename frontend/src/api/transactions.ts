@@ -1,4 +1,5 @@
-import axios from 'axios';
+
+import api from '../services/api';
 import type { Transaction, TransactionFormData } from '../types/transaction';
 
 const API_URL = '/transactions';
@@ -15,31 +16,31 @@ export const transactionApi = {
     search?: string;
     ordering?: string;
   }): Promise<Transaction[]> => {
-    const { data } = await axios.get(API_URL, { params });
+    const { data } = await api.get(API_URL, { params });
     return data;
   },
 
   // Get transaction by ID
   getTransaction: async (id: string): Promise<Transaction> => {
-    const { data } = await axios.get(`${API_URL}/${id}`);
+    const { data } = await api.get(`${API_URL}/${id}`);
     return data;
   },
 
   // Create new transaction
   createTransaction: async (transactionData: TransactionFormData): Promise<Transaction> => {
-    const { data } = await axios.post(API_URL, transactionData);
+    const { data } = await api.post(API_URL, transactionData);
     return data;
   },
 
   // Update transaction
   updateTransaction: async (id: string, transactionData: Partial<TransactionFormData>): Promise<Transaction> => {
-    const { data } = await axios.put(`${API_URL}/${id}`, transactionData);
+    const { data } = await api.put(`${API_URL}/${id}`, transactionData);
     return data;
   },
 
   // Delete transaction
   deleteTransaction: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/${id}`);
+    await api.delete(`${API_URL}/${id}`);
   },
 
   // Get transaction statistics
@@ -52,7 +53,7 @@ export const transactionApi = {
     net_amount: number;
     top_categories: Array<{ category__name: string; total: number }>;
   }> => {
-    const { data } = await axios.get(`${API_URL}/stats`, { params });
+    const { data } = await api.get(`${API_URL}/stats`, { params });
     return data;
   },
 }; 
