@@ -48,16 +48,16 @@ class Account(UUIDModel):
         return f"{self.name} ({self.get_type_display()})"
 
 class ExchangeRate(UUIDModel):
-    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='exchange_rates')
     from_currency = models.ForeignKey(Currency, on_delete=models.PROTECT, related_name='exchange_rates_from')
     to_currency = models.ForeignKey(Currency, on_delete=models.PROTECT, related_name='exchange_rates_to')
     rate = models.DecimalField(max_digits=15, decimal_places=6)
     date = models.DateField()
-    is_manual = models.BooleanField(default=False)
+    is_manual = models.BooleanField(default=False)  # True for user-set rates
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, null=True, blank=True, related_name='platform_exchange_rates')  # Null for platform rates
 
     class Meta:
-        unique_together = ['user', 'from_currency', 'to_currency', 'date']
-        ordering = ['-date']
+        unique_together = ['from_currency', 'to_currency', 'date', 'user']
+        ordering = ['-date', '-created_at']
         indexes = [
             models.Index(fields=['user', 'date']),
             models.Index(fields=['from_currency', 'to_currency']),
@@ -65,3 +65,22 @@ class ExchangeRate(UUIDModel):
 
     def __str__(self):
         return f"{self.from_currency.code}/{self.to_currency.code} - {self.date}"
+
+class UserExchangeRate(UUIDModel):
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='user_exchange_rates')
+    from_currency = models.ForeignKey(Currency, on_delete=models.PROTECT, related_name='user_rates_from')
+    to_currency = models.ForeignKey(Currency, on_delete=models.PROTECT, related_name='user_rates_to')
+    rate = models.DecimalField(max_digits=15, decimal_places=6)
+    date = models.DateField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ['user', 'from_currency', 'to_currency', 'date']
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['user', 'date']),
+            models.Index(fields=['from_currency', 'to_currency']),
+        ]
+
+    def __str__(self):
+        return f"{self.from_currency.code}/{self.to_currency.code} - {self.date} (User: {self.user.username})"
