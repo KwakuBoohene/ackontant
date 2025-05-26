@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
+from typing import Dict, Any, List, Optional
 from .models import Transaction, Category, Tag
 from accounts.models import Account, Currency
 
@@ -46,7 +48,16 @@ class TransactionSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'base_currency_amount', 'exchange_rate']
 
-    def get_currency(self, obj):
+    @extend_schema_field({
+        'type': 'object',
+        'properties': {
+            'id': {'type': 'string', 'format': 'uuid'},
+            'code': {'type': 'string'},
+            'name': {'type': 'string'},
+            'symbol': {'type': 'string'}
+        }
+    })
+    def get_currency(self, obj: Transaction) -> Dict[str, Any]:
         return {
             'id': obj.currency.id,
             'code': obj.currency.code,
@@ -54,28 +65,36 @@ class TransactionSerializer(serializers.ModelSerializer):
             'symbol': obj.currency.symbol
         }
 
-    def get_account(self, obj):
+    @extend_schema_field({
+        'type': 'object',
+        'properties': {
+            'id': {'type': 'string', 'format': 'uuid'},
+            'name': {'type': 'string'},
+            'type': {'type': 'string'}
+        }
+    })
+    def get_account(self, obj: Transaction) -> Dict[str, Any]:
         return {
             'id': obj.account.id,
             'name': obj.account.name,
             'type': obj.account.type
         }
 
-    def validate_account_id(self, value):
+    def validate_account_id(self, value: str) -> str:
         try:
             Account.objects.get(id=value, user=self.context['request'].user)
         except Account.DoesNotExist:
             raise serializers.ValidationError("Account not found")
         return value
 
-    def validate_currency_id(self, value):
+    def validate_currency_id(self, value: str) -> str:
         try:
             Currency.objects.get(id=value)
         except Currency.DoesNotExist:
             raise serializers.ValidationError("Currency not found")
         return value
 
-    def validate_category_id(self, value):
+    def validate_category_id(self, value: Optional[str]) -> Optional[str]:
         if value:
             try:
                 Category.objects.get(id=value, user=self.context['request'].user)
@@ -83,14 +102,14 @@ class TransactionSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Category not found")
         return value
 
-    def validate_tag_ids(self, value):
+    def validate_tag_ids(self, value: List[str]) -> List[str]:
         if value:
             tags = Tag.objects.filter(id__in=value, user=self.context['request'].user)
             if len(tags) != len(value):
                 raise serializers.ValidationError("One or more tags not found")
         return value
 
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
         # Ensure required fields are present
         required_fields = ['type', 'amount', 'currency_id', 'description', 'date', 'account_id']
         for field in required_fields:
@@ -98,7 +117,7 @@ class TransactionSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({field: f"{field} is required"})
         return data
 
-    def create(self, validated_data):
+    def create(self, validated_data: Dict[str, Any]) -> Transaction:
         tag_ids = validated_data.pop('tag_ids', [])
         category_id = validated_data.pop('category_id', None)
         account_id = validated_data.pop('account_id', None)
@@ -138,7 +157,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         
         return transaction
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Transaction, validated_data: Dict[str, Any]) -> Transaction:
         tag_ids = validated_data.pop('tag_ids', None)
         category_id = validated_data.pop('category_id', None)
         currency_id = validated_data.pop('currency_id', None)

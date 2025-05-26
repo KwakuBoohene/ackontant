@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum, Q
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from .models import Transaction, Category, Tag
 from .serializers import TransactionSerializer, CategorySerializer, TagSerializer
 
@@ -19,6 +19,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     search_fields = ['description']
     ordering_fields = ['date', 'amount', 'created_at']
     ordering = ['-date', '-created_at']
+    queryset = Transaction.objects.none()  # Required for schema generation
 
     @extend_schema(
         parameters=[
@@ -62,12 +63,37 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 type=str,
                 description='Order results by field (date, amount, created_at)'
             ),
-        ]
+        ],
+        responses={
+            200: TransactionSerializer(many=True),
+            401: OpenApiResponse(description="Unauthorized"),
+        }
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Transaction ID'
+            )
+        ],
+        responses={
+            200: TransactionSerializer,
+            401: OpenApiResponse(description="Unauthorized"),
+            404: OpenApiResponse(description="Not Found"),
+        }
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Transaction.objects.none()
+            
         queryset = Transaction.objects.filter(user=self.request.user)
         
         # Filter by account if account_id is provided
@@ -103,7 +129,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 description='Get statistics until this date (YYYY-MM-DD)'
             ),
         ],
-        description='Get transaction statistics including total income, expenses, and top categories'
+        description='Get transaction statistics including total income, expenses, and top categories',
+        responses={
+            200: OpenApiResponse(description="Transaction statistics"),
+            401: OpenApiResponse(description="Unauthorized"),
+        }
     )
     @action(detail=False, methods=['get'])
     def stats(self, request):
@@ -141,8 +171,29 @@ class CategoryViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
     ordering_fields = ['name', 'type']
     ordering = ['type', 'name']
+    queryset = Category.objects.none()  # Required for schema generation
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Category ID'
+            )
+        ],
+        responses={
+            200: CategorySerializer,
+            401: OpenApiResponse(description="Unauthorized"),
+            404: OpenApiResponse(description="Not Found"),
+        }
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Category.objects.none()
         return Category.objects.filter(user=self.request.user)
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -152,6 +203,27 @@ class TagViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
     ordering_fields = ['name']
     ordering = ['name']
+    queryset = Tag.objects.none()  # Required for schema generation
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=int,
+                location=OpenApiParameter.PATH,
+                description='Tag ID'
+            )
+        ],
+        responses={
+            200: TagSerializer,
+            401: OpenApiResponse(description="Unauthorized"),
+            404: OpenApiResponse(description="Not Found"),
+        }
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Tag.objects.none()
         return Tag.objects.filter(user=self.request.user)
