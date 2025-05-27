@@ -16,6 +16,7 @@ from .serializers import (
 )
 from accounts.models import Account, Currency, UserExchangeRate
 from .services import BalanceService
+from django.core.exceptions import ValidationError
 
 # Create your views here.
 
@@ -180,8 +181,18 @@ class TransactionViewSet(viewsets.ModelViewSet):
         # Create transaction
         transaction = serializer.save(user=request.user)
         
-        # Process transaction and update balances
-        BalanceService.process_transaction(transaction)
+        # Get allow_negative flag from request
+        allow_negative = request.data.get('allow_negative', False)
+        
+        try:
+            # Process transaction and update balances
+            BalanceService.process_transaction(transaction, allow_negative)
+        except ValidationError as e:
+            transaction.delete()
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         return Response(
             TransactionSerializer(transaction).data,
@@ -192,8 +203,17 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         transaction = self.get_object()
         
-        # Reverse transaction and update balances
-        BalanceService.reverse_transaction(transaction)
+        # Get allow_negative flag from request
+        allow_negative = request.data.get('allow_negative', False)
+        
+        try:
+            # Reverse transaction and update balances
+            BalanceService.reverse_transaction(transaction, allow_negative)
+        except ValidationError as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         # Delete transaction
         transaction.delete()
@@ -295,10 +315,21 @@ class TransferViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Validate sufficient funds
-        if source_account.current_balance < data['amount']:
+        # Get allow_negative flag from request
+        allow_negative = request.data.get('allow_negative', False)
+
+        try:
+            # Check for sufficient funds
+            BalanceService.check_negative_balance(
+                source_account,
+                data['amount'],
+                source_currency,
+                data['exchange_rate'],
+                allow_negative
+            )
+        except ValidationError as e:
             return Response(
-                {"detail": "Insufficient funds in source account"},
+                {"detail": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -372,8 +403,16 @@ class TransferViewSet(viewsets.ModelViewSet):
         transfer.status = 'COMPLETED'
         transfer.save()
 
-        # Process transfer and update balances
-        BalanceService.process_transfer(transfer)
+        try:
+            # Process transfer and update balances
+            BalanceService.process_transfer(transfer, allow_negative)
+        except ValidationError as e:
+            # Clean up created objects if balance update fails
+            transfer.delete()
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         return Response(
             TransferSerializer(transfer).data,
@@ -390,9 +429,18 @@ class TransferViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Get allow_negative flag from request
+        allow_negative = request.data.get('allow_negative', False)
+
         with transaction.atomic():
-            # Reverse the transfer and update balances
-            BalanceService.reverse_transfer(transfer)
+            try:
+                # Reverse the transfer and update balances
+                BalanceService.reverse_transfer(transfer, allow_negative)
+            except ValidationError as e:
+                return Response(
+                    {"detail": str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             # Delete the transactions
             if transfer.source_transaction:
