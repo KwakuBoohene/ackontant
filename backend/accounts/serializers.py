@@ -42,7 +42,7 @@ class ExchangeRateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExchangeRate
         fields = ['id', 'from_currency', 'to_currency', 'from_currency_id', 'to_currency_id', 
-                 'rate', 'date', 'is_manual', 'created_at', 'updated_at']
+                 'rate', 'date', 'source', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def validate(self, data):
