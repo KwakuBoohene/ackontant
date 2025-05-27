@@ -15,6 +15,7 @@ from .serializers import (
     TransferSerializer, TransferCreateSerializer
 )
 from accounts.models import Account, Currency, UserExchangeRate
+from .services import BalanceService
 
 # Create your views here.
 
@@ -170,6 +171,34 @@ class TransactionViewSet(viewsets.ModelViewSet):
             'net_amount': income - expenses,
             'top_categories': top_categories
         })
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Create transaction
+        transaction = serializer.save(user=request.user)
+        
+        # Process transaction and update balances
+        BalanceService.process_transaction(transaction)
+        
+        return Response(
+            TransactionSerializer(transaction).data,
+            status=status.HTTP_201_CREATED
+        )
+
+    @transaction.atomic
+    def destroy(self, request, *args, **kwargs):
+        transaction = self.get_object()
+        
+        # Reverse transaction and update balances
+        BalanceService.reverse_transaction(transaction)
+        
+        # Delete transaction
+        transaction.delete()
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
@@ -343,11 +372,8 @@ class TransferViewSet(viewsets.ModelViewSet):
         transfer.status = 'COMPLETED'
         transfer.save()
 
-        # Update account balances
-        source_account.current_balance -= data['amount']
-        source_account.save()
-        destination_account.current_balance += destination_amount
-        destination_account.save()
+        # Process transfer and update balances
+        BalanceService.process_transfer(transfer)
 
         return Response(
             TransferSerializer(transfer).data,
@@ -365,19 +391,14 @@ class TransferViewSet(viewsets.ModelViewSet):
             )
 
         with transaction.atomic():
-            # Reverse the transactions
+            # Reverse the transfer and update balances
+            BalanceService.reverse_transfer(transfer)
+
+            # Delete the transactions
             if transfer.source_transaction:
                 transfer.source_transaction.delete()
             if transfer.destination_transaction:
                 transfer.destination_transaction.delete()
-
-            # Update account balances
-            transfer.source_account.current_balance += transfer.amount
-            transfer.source_account.save()
-            
-            destination_amount = transfer.amount * transfer.exchange_rate
-            transfer.destination_account.current_balance -= destination_amount
-            transfer.destination_account.save()
 
             # Update transfer status
             transfer.status = 'CANCELLED'
