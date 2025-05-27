@@ -1,23 +1,38 @@
-import { createRootRoute, createRoute, Outlet } from '@tanstack/react-router';
-import LandingPage from './pages/LandingPage';
+import { createRootRoute, createRoute } from '@tanstack/react-router';
+import ProfileSettingsPage from './pages/ProfileSettingsPage';
+import DashboardPage from './pages/DashboardPage';
+import AccountDetailsPage from './pages/AccountDetailsPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage';
-import DashboardPage from './pages/DashboardPage';
-import AccountDetailsPage from './pages/AccountDetailsPage';
-import { createRouter } from '@tanstack/react-router';
+import LandingPage from './pages/LandingPage';
 
-
-const rootRoute = createRootRoute({
-  component: () => <Outlet />,
-});
+const rootRoute = createRootRoute();
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: LandingPage,
+  component: LandingPage
+});
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dashboard',
+  component: DashboardPage,
+});
+
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/profile',
+  component: ProfileSettingsPage,
+});
+
+const accountDetailsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/accounts/$id',
+  component: AccountDetailsPage,
 });
 
 const loginRoute = createRoute({
@@ -50,30 +65,17 @@ const verifyEmailRoute = createRoute({
   component: VerifyEmailPage,
 });
 
-const dashboardRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/dashboard',
-  component: DashboardPage,
-});
-
-const accountDetailsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/accounts/$id',
-  component: AccountDetailsPage,
-});
-
 export const routeTree = rootRoute.addChildren([
   indexRoute,
+  dashboardRoute,
+  profileRoute,
+  accountDetailsRoute,
   loginRoute,
   registerRoute,
   forgotPasswordRoute,
   resetPasswordRoute,
   verifyEmailRoute,
-  dashboardRoute,
-  accountDetailsRoute,
 ]);
-
-export const router = createRouter({ routeTree });
 
 declare module '@tanstack/react-router' {
   interface Register {

@@ -1,85 +1,62 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useAuthStore } from '../stores/authStore';
-import { useNavigate } from '@tanstack/react-router';
 
-export default function UserDropdown() {
+const UserDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
-  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
-    }
+    };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate({ to: '/auth/login' });
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 text-[#333] hover:text-[#FFB32C] transition-colors"
-        style={{ fontWeight: 500 }}
+        className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none"
       >
-        <span>Welcome, {user?.email}</span>
-        <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
+          {user?.email?.[0]?.toUpperCase() || 'U'}
+        </div>
+        <span className="text-sm font-medium">{user?.email}</span>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
-          <div className="px-4 py-2 border-b border-gray-100">
-            <p className="text-sm text-gray-600">{user?.email}</p>
+        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+          <div className="py-1" role="menu" aria-orientation="vertical">
+            <Link
+              to="/profile"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              role="menuitem"
+              onClick={() => setIsOpen(false)}
+            >
+              Profile Settings
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              role="menuitem"
+            >
+              Sign out
+            </button>
           </div>
-          
-          <a
-            href="/profile"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          >
-            Profile Settings
-          </a>
-          
-          <a
-            href="/security"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          >
-            Security
-          </a>
-          
-          <a
-            href="/notifications"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          >
-            Notifications
-          </a>
-          
-          <div className="border-t border-gray-100 my-1"></div>
-          
-          <button
-            onClick={handleLogout}
-            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-          >
-            Sign Out
-          </button>
         </div>
       )}
     </div>
   );
-} 
+};
+
+export default UserDropdown; 

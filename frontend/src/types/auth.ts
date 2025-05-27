@@ -1,9 +1,16 @@
 export interface User {
   id: string;
   email: string;
-  isEmailVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
+  first_name: string;
+  last_name: string;
+  is_email_verified: boolean;
+  base_currency: {
+    id: string;
+    code: string;
+    name: string;
+  } | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AuthError {
