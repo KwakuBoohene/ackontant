@@ -12,6 +12,7 @@ import TransactionsTable from '../components/dashboard/TransactionsTable';
 import DeleteConfirmationModal from '../components/dashboard/DeleteConfirmationModal';
 import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
+import DashboardLayout from '../layouts/DashboardLayout';
 
 const AccountDetailsPage: React.FC = () => {
   const params = useParams({ from: '/accounts/$id' });
@@ -38,9 +39,6 @@ const AccountDetailsPage: React.FC = () => {
     isError: isAccountError,
   } = useAccount(accountId);
 
- 
-
- 
   const { mutateAsync: deleteAccount } = useDeleteAccount();
 
   const {
@@ -150,7 +148,7 @@ const AccountDetailsPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <DashboardLayout>
       <div className="mb-8">
         <AccountInfo account={account} onDeleteClick={() => setIsDeleteModalOpen(true)} />
       </div>
@@ -161,7 +159,7 @@ const AccountDetailsPage: React.FC = () => {
 
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-white">Transactions</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Transactions</h2>
           <button
             onClick={() => {
               setSelectedTransaction(null);
@@ -201,52 +199,56 @@ const AccountDetailsPage: React.FC = () => {
         />
       </div>
 
-      <TransactionForm
-        onSubmit={handleSubmit}
-        onCancel={() => {
-          setIsTransactionModalOpen(false);
-          setSelectedTransaction(null);
-          setForm({
-            amount: '',
-            type: 'EXPENSE',
-            date: new Date().toISOString().split('T')[0],
-            description: '',
-            category_id: '',
-            tag_ids: [],
-          });
-        }}
-        form={form}
-        setForm={setForm}
-        categories={categories}
-        tags={tags}
-        isLoadingCategories={isCategoriesLoading}
-        isLoadingTags={isTagsLoading}
-        isSubmitting={isSubmitting}
-        error={formError}
-        isEditing={!!selectedTransaction}
-      />
+      {isTransactionModalOpen && (
+        <TransactionForm
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setIsTransactionModalOpen(false);
+            setSelectedTransaction(null);
+            setForm({
+              amount: '',
+              type: 'EXPENSE',
+              date: new Date().toISOString().split('T')[0],
+              description: '',
+              category_id: '',
+              tag_ids: [],
+            });
+          }}
+          form={form}
+          setForm={setForm}
+          categories={categories}
+          tags={tags}
+          isLoadingCategories={isCategoriesLoading}
+          isLoadingTags={isTagsLoading}
+          isSubmitting={isSubmitting}
+          error={formError}
+          isEditing={!!selectedTransaction}
+        />
+      )}
 
-      <DeleteConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setSelectedTransaction(null);
-        }}
-        onConfirm={() => {
-          if (selectedTransaction) {
-            handleDeleteTransaction(selectedTransaction);
-          } else {
-            handleDeleteAccount();
+      {isDeleteModalOpen && (
+        <DeleteConfirmationModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setSelectedTransaction(null);
+          }}
+          onConfirm={() => {
+            if (selectedTransaction) {
+              handleDeleteTransaction(selectedTransaction);
+            } else {
+              handleDeleteAccount();
+            }
+          }}
+          title={selectedTransaction ? 'Delete Transaction' : 'Delete Account'}
+          message={
+            selectedTransaction
+              ? 'Are you sure you want to delete this transaction? This action cannot be undone.'
+              : 'Are you sure you want to delete this account? This will also delete all associated transactions. This action cannot be undone.'
           }
-        }}
-        title={selectedTransaction ? 'Delete Transaction' : 'Delete Account'}
-        message={
-          selectedTransaction
-            ? 'Are you sure you want to delete this transaction? This action cannot be undone.'
-            : 'Are you sure you want to delete this account? This will also delete all associated transactions. This action cannot be undone.'
-        }
-      />
-    </div>
+        />
+      )}
+    </DashboardLayout>
   );
 };
 
