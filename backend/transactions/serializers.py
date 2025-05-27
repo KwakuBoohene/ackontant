@@ -1,8 +1,9 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from typing import Dict, Any, List, Optional
-from .models import Transaction, Category, Tag
-from accounts.models import Account, Currency
+from .models import Transaction, Category, Tag, Transfer
+from accounts.models import Account, Currency, UserExchangeRate
+from accounts.serializers import AccountSerializer, CurrencySerializer
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,29 +25,86 @@ class TagSerializer(serializers.ModelSerializer):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
 
+class TransferSerializer(serializers.ModelSerializer):
+    source_account = AccountSerializer(read_only=True)
+    destination_account = AccountSerializer(read_only=True)
+    source_currency = CurrencySerializer(read_only=True)
+    destination_currency = CurrencySerializer(read_only=True)
+    source_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
+    destination_transaction = serializers.PrimaryKeyRelatedField(read_only=True)
+    user_exchange_rate = serializers.PrimaryKeyRelatedField(
+        queryset=UserExchangeRate.objects.all(),
+        required=False,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Transfer
+        fields = [
+            'id', 'user', 'source_account', 'destination_account',
+            'amount', 'source_currency', 'destination_currency',
+            'exchange_rate', 'base_currency_amount', 'date',
+            'description', 'status', 'source_transaction',
+            'destination_transaction', 'rate_source', 'user_exchange_rate',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['user', 'status', 'source_transaction', 'destination_transaction']
+
+class TransferCreateSerializer(serializers.ModelSerializer):
+    source_account_id = serializers.UUIDField(write_only=True)
+    destination_account_id = serializers.UUIDField(write_only=True)
+    source_currency_id = serializers.UUIDField(write_only=True)
+    destination_currency_id = serializers.UUIDField(write_only=True)
+    user_exchange_rate_id = serializers.UUIDField(required=False, allow_null=True)
+
+    class Meta:
+        model = Transfer
+        fields = [
+            'source_account_id', 'destination_account_id',
+            'amount', 'source_currency_id', 'destination_currency_id',
+            'exchange_rate', 'date', 'description', 'user_exchange_rate_id'
+        ]
+
+    def validate(self, data):
+        # Ensure source and destination accounts are different
+        if data['source_account_id'] == data['destination_account_id']:
+            raise serializers.ValidationError("Source and destination accounts must be different")
+
+        # Validate amount is positive
+        if data['amount'] <= 0:
+            raise serializers.ValidationError("Amount must be positive")
+
+        # Validate exchange rate is positive
+        if data['exchange_rate'] <= 0:
+            raise serializers.ValidationError("Exchange rate must be positive")
+
+        return data
+
 class TransactionSerializer(serializers.ModelSerializer):
-    category = CategorySerializer(read_only=True)
-    category_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
-    tags = TagSerializer(many=True, read_only=True)
-    tag_ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        write_only=True,
+    account = AccountSerializer(read_only=True)
+    currency = CurrencySerializer(read_only=True)
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(),
+        many=True,
         required=False
     )
-    currency = serializers.SerializerMethodField()
-    currency_id = serializers.UUIDField(write_only=True, required=True)
-    account = serializers.SerializerMethodField()
-    account_id = serializers.UUIDField(write_only=True, required=True)
+    transfer = TransferSerializer(read_only=True)
 
     class Meta:
         model = Transaction
         fields = [
-            'id', 'type', 'amount', 'currency', 'currency_id', 'base_currency_amount',
-            'exchange_rate', 'description', 'date', 'category', 'category_id',
-            'tags', 'tag_ids', 'is_recurring', 'recurring_rule', 'is_archived',
-            'account', 'account_id', 'created_at', 'updated_at'
+            'id', 'user', 'account', 'type', 'amount',
+            'currency', 'base_currency_amount', 'exchange_rate',
+            'description', 'date', 'category', 'tags',
+            'is_recurring', 'recurring_rule', 'is_archived',
+            'transfer', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'base_currency_amount', 'exchange_rate']
+        read_only_fields = ['user', 'base_currency_amount']
 
     @extend_schema_field({
         'type': 'object',

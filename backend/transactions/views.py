@@ -6,8 +6,15 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum, Q
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
-from .models import Transaction, Category, Tag
-from .serializers import TransactionSerializer, CategorySerializer, TagSerializer
+from django.db import transaction
+from django.utils import timezone
+from decimal import Decimal
+from .models import Transaction, Category, Tag, Transfer
+from .serializers import (
+    TransactionSerializer, CategorySerializer, TagSerializer,
+    TransferSerializer, TransferCreateSerializer
+)
+from accounts.models import Account, Currency, UserExchangeRate
 
 # Create your views here.
 
@@ -227,3 +234,156 @@ class TagViewSet(viewsets.ModelViewSet):
         if getattr(self, 'swagger_fake_view', False):
             return Tag.objects.none()
         return Tag.objects.filter(user=self.request.user)
+
+class TransferViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TransferSerializer
+
+    def get_queryset(self):
+        return Transfer.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return TransferCreateSerializer
+        return TransferSerializer
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        # Get accounts and currencies
+        source_account = Account.objects.get(id=data['source_account_id'])
+        destination_account = Account.objects.get(id=data['destination_account_id'])
+        source_currency = Currency.objects.get(id=data['source_currency_id'])
+        destination_currency = Currency.objects.get(id=data['destination_currency_id'])
+
+        # Validate account ownership
+        if source_account.user != request.user or destination_account.user != request.user:
+            return Response(
+                {"detail": "You don't have permission to access these accounts"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Validate sufficient funds
+        if source_account.current_balance < data['amount']:
+            return Response(
+                {"detail": "Insufficient funds in source account"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Determine rate source and get exchange rate
+        rate_source = 'USER'
+        exchange_rate = data['exchange_rate']
+        user_exchange_rate = None
+
+        if 'user_exchange_rate_id' in data and data['user_exchange_rate_id']:
+            user_exchange_rate = UserExchangeRate.objects.get(id=data['user_exchange_rate_id'])
+            if user_exchange_rate.user != request.user:
+                return Response(
+                    {"detail": "Invalid user exchange rate"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            rate_source = 'USER'
+        else:
+            rate_source = 'PLATFORM'
+
+        # Calculate destination amount and base currency amount
+        destination_amount = data['amount'] * exchange_rate
+        base_currency_amount = data['amount'] * exchange_rate  # Assuming GHS is base currency
+
+        # Create transfer record
+        transfer = Transfer.objects.create(
+            user=request.user,
+            source_account=source_account,
+            destination_account=destination_account,
+            amount=data['amount'],
+            source_currency=source_currency,
+            destination_currency=destination_currency,
+            exchange_rate=exchange_rate,
+            base_currency_amount=base_currency_amount,
+            date=data['date'],
+            description=data['description'],
+            rate_source=rate_source,
+            user_exchange_rate=user_exchange_rate
+        )
+
+        # Create source transaction (expense)
+        source_transaction = Transaction.objects.create(
+            user=request.user,
+            account=source_account,
+            type='EXPENSE',
+            amount=data['amount'],
+            currency=source_currency,
+            base_currency_amount=base_currency_amount,
+            exchange_rate=exchange_rate,
+            description=f"Transfer to {destination_account.name}: {data['description']}",
+            date=data['date'],
+            transfer=transfer
+        )
+
+        # Create destination transaction (income)
+        destination_transaction = Transaction.objects.create(
+            user=request.user,
+            account=destination_account,
+            type='INCOME',
+            amount=destination_amount,
+            currency=destination_currency,
+            base_currency_amount=base_currency_amount,
+            exchange_rate=exchange_rate,
+            description=f"Transfer from {source_account.name}: {data['description']}",
+            date=data['date'],
+            transfer=transfer
+        )
+
+        # Update transfer with transaction references
+        transfer.source_transaction = source_transaction
+        transfer.destination_transaction = destination_transaction
+        transfer.status = 'COMPLETED'
+        transfer.save()
+
+        # Update account balances
+        source_account.current_balance -= data['amount']
+        source_account.save()
+        destination_account.current_balance += destination_amount
+        destination_account.save()
+
+        return Response(
+            TransferSerializer(transfer).data,
+            status=status.HTTP_201_CREATED
+        )
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        transfer = self.get_object()
+        
+        if transfer.status != 'COMPLETED':
+            return Response(
+                {"detail": "Only completed transfers can be cancelled"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        with transaction.atomic():
+            # Reverse the transactions
+            if transfer.source_transaction:
+                transfer.source_transaction.delete()
+            if transfer.destination_transaction:
+                transfer.destination_transaction.delete()
+
+            # Update account balances
+            transfer.source_account.current_balance += transfer.amount
+            transfer.source_account.save()
+            
+            destination_amount = transfer.amount * transfer.exchange_rate
+            transfer.destination_account.current_balance -= destination_amount
+            transfer.destination_account.save()
+
+            # Update transfer status
+            transfer.status = 'CANCELLED'
+            transfer.save()
+
+        return Response(
+            TransferSerializer(transfer).data,
+            status=status.HTTP_200_OK
+        )
