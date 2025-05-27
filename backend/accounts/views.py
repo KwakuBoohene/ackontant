@@ -1,11 +1,14 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse, OpenApiTypes
 from .models import Currency, Account, ExchangeRate, UserExchangeRate
 from .serializers import CurrencySerializer, AccountSerializer, ExchangeRateSerializer, UserExchangeRateSerializer
 from django.utils import timezone
 from datetime import date
+from django.conf import settings
+from .services import ExchangeRateService
 
 # Create your views here.
 
@@ -149,6 +152,9 @@ class ExchangeRateViewSet(viewsets.ModelViewSet):
     serializer_class = ExchangeRateSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = ExchangeRate.objects.none()  # Default queryset for schema generation
+    filterset_fields = ['from_currency', 'to_currency', 'date']
+    ordering_fields = ['date', 'rate']
+    ordering = ['-date']
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
@@ -229,6 +235,40 @@ class ExchangeRateViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
+
+    @extend_schema(
+        description="Debug endpoint to manually trigger exchange rate update. Only available in DEBUG mode.",
+        responses={
+            200: OpenApiResponse(description="Exchange rates updated successfully"),
+            403: OpenApiResponse(description="Debug mode is not enabled"),
+            500: OpenApiResponse(description="Error updating exchange rates")
+        }
+    )
+    @action(detail=False, methods=['post'], url_path='debug/update-rates', permission_classes=[])
+    def debug_update_rates(self, request):
+        """
+        Debug endpoint to manually trigger exchange rate update.
+        Only available when DEBUG=True in settings.
+        No authentication required.
+        """
+        if not settings.DEBUG:
+            return Response(
+                {"error": "This endpoint is only available in debug mode"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            service = ExchangeRateService()
+            service.update_exchange_rates()
+            return Response(
+                {"message": "Exchange rates updated successfully"},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to update exchange rates: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class UserExchangeRateViewSet(viewsets.ModelViewSet):
     serializer_class = UserExchangeRateSerializer

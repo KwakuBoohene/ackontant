@@ -11,9 +11,11 @@ def fetch_daily_exchange_rates():
     """
     try:
         service = ExchangeRateService()
+        print("Fetching daily exchange rates")
         service.update_exchange_rates()
         logger.info("Successfully updated daily exchange rates")
         return True
     except Exception as e:
         logger.error(f"Failed to update daily exchange rates: {str(e)}")
         raise 
+
