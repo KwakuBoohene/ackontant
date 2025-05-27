@@ -14,7 +14,8 @@ import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
 
 const AccountDetailsPage: React.FC = () => {
-  const { accountId } = useParams({ from: '/accounts/$id' });
+  const params = useParams({ from: '/accounts/$id' });
+  const accountId = params?.id;
   const navigate = useNavigate();
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -37,21 +38,16 @@ const AccountDetailsPage: React.FC = () => {
     isError: isAccountError,
   } = useAccount(accountId);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('Account ID:', accountId);
-    console.log('Account Data:', account);
-    console.log('Account Error:', accountError);
-    console.log('Is Account Error:', isAccountError);
-  }, [accountId, account, accountError, isAccountError]);
+ 
 
+ 
   const { mutateAsync: deleteAccount } = useDeleteAccount();
 
   const {
     data: transactions = [],
     isLoading: isTransactionsLoading,
     error: transactionsError,
-  } = useTransactions(accountId);
+  } = useTransactions({account_id:accountId||''});
 
   const { mutateAsync: createTransaction } = useCreateTransaction();
   const { mutateAsync: updateTransaction } = useUpdateTransaction();
