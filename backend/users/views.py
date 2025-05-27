@@ -341,7 +341,14 @@ class UserViewSet(viewsets.ModelViewSet):
                 value={
                     'id': 'uuid',
                     'email': 'user@example.com',
+                    'first_name': 'John',
+                    'last_name': 'Doe',
                     'is_email_verified': True,
+                    'base_currency': {
+                        'id': 'uuid',
+                        'code': 'USD',
+                        'name': 'US Dollar'
+                    },
                     'created_at': '2024-03-20T12:00:00Z',
                     'updated_at': '2024-03-20T12:00:00Z'
                 },
@@ -349,8 +356,10 @@ class UserViewSet(viewsets.ModelViewSet):
             ),
         ]
     )
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
 
     @extend_schema(
         summary="Update current user",
@@ -362,8 +371,15 @@ class UserViewSet(viewsets.ModelViewSet):
                 'Success Response',
                 value={
                     'id': 'uuid',
-                    'email': 'updated@example.com',
+                    'email': 'user@example.com',
+                    'first_name': 'John',
+                    'last_name': 'Doe',
                     'is_email_verified': True,
+                    'base_currency': {
+                        'id': 'uuid',
+                        'code': 'USD',
+                        'name': 'US Dollar'
+                    },
                     'created_at': '2024-03-20T12:00:00Z',
                     'updated_at': '2024-03-20T12:00:00Z'
                 },
@@ -371,5 +387,9 @@ class UserViewSet(viewsets.ModelViewSet):
             ),
         ]
     )
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+    @action(detail=False, methods=['patch'])
+    def update_me(self, request):
+        serializer = self.get_serializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

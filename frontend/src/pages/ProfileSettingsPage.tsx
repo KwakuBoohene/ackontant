@@ -113,7 +113,7 @@ const ProfileSettingsPage: React.FC = () => {
                 <input
                   type="text"
                   id="base_currency"
-                  value={`${profile.base_currency.code} - ${profile.base_currency.name}`}
+                  value={profile.base_currency ? `${profile.base_currency.code} - ${profile.base_currency.name}` : 'Not set'}
                   disabled
                   className="w-full px-3 py-2 bg-[#0f172a] border border-gray-700 rounded-md text-white disabled:opacity-50"
                 />
