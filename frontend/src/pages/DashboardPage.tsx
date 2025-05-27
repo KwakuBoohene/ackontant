@@ -8,6 +8,10 @@ import CreateAccountModal from '../components/modals/CreateAccountModal';
 import { formatCurrency } from '../utils/currency';
 import type { Account } from '@/types/accounts';
 import { useAccounts } from '../hooks/useAccounts';
+import AccountCard from '../components/dashboard/AccountCard';
+import EmptyState from '../components/dashboard/EmptyState';
+import LoadingState from '../components/dashboard/LoadingState';
+import ErrorState from '../components/dashboard/ErrorState';
 
 // Sample data for charts
 const balanceData = [
@@ -77,22 +81,8 @@ const DashboardPage: React.FC = () => {
   const { data: accounts = [], isLoading, error } = useAccounts();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    const errorMsg = error instanceof Error ? error.message : error;
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500">{errorMsg}</div>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState error={error} />;
 
   return (
     <DashboardLayout>
@@ -109,48 +99,12 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {accounts.length === 0 ? (
-        <div className="text-center py-12">
-          <h2 className="text-xl font-semibold mb-4">No Accounts Yet</h2>
-          <p className="text-gray-600 mb-6">Add your first account to start tracking your finances.</p>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-dark"
-          >
-            Add Your First Account
-          </button>
-        </div>
+        <EmptyState onCreateClick={() => setIsCreateModalOpen(true)} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {accounts.map((account:Account) => (
-            <Link
-              key={account.id}
-              to="/accounts/$id"
-              params={{ id: account.id }}
-              className="bg-[#1e293b] rounded-lg p-6 shadow-lg hover:bg-[#1e293b]/90 transition-colors cursor-pointer"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">{account.name}</h3>
-                  <p className="text-gray-400 text-sm">{account.type}</p>
-                </div>
-                <span className="text-[#FFB32C] text-sm">{account.currency.code}</span>
-              </div>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-gray-400 text-sm">Current Balance</p>
-                  <p className="text-white text-xl font-semibold">
-                    {formatCurrency(account.current_balance, account.currency)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Base Currency Balance</p>
-                  <p className="text-white text-lg">
-                    {formatCurrency(account.base_currency_balance, account.currency)}
-                  </p>
-        </div>
-      </div>
-            </Link>
-                ))}
+          {accounts.map((account) => (
+            <AccountCard key={account.id} account={account} />
+          ))}
         </div>
       )}
 
