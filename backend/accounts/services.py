@@ -162,16 +162,69 @@ class ExchangeRateService:
         Returns:
             Tuple of (ExchangeRate instance, created flag)
         """
-        return ExchangeRate.objects.update_or_create(
-            from_currency=from_currency,
-            to_currency=to_currency,
-            date=date,
-            defaults={
-                'rate': rate,
-                'source': 'api'
-            }
-        )
+        try:
+            logger.info(f"Updating exchange rate: {from_currency.code}/{to_currency.code} = {rate} on {date}")
+            
+            rate_obj, created = ExchangeRate.objects.update_or_create(
+                from_currency=from_currency,
+                to_currency=to_currency,
+                date=date,
+                defaults={
+                    'rate': rate,
+                    'source': 'api'
+                }
+            )
+            
+            logger.info(f"Exchange rate {'created' if created else 'updated'}: {rate_obj.id}")
+            return rate_obj, created
+            
+        except Exception as e:
+            logger.error(f"Error updating exchange rate: {str(e)}")
+            raise
     
+    def _initialize_base_currencies(self):
+        """
+        Initialize base currencies (GHS and EUR) in the database.
+        These are required for the exchange rate calculations.
+        """
+        try:
+            logger.info("Initializing base currencies...")
+            
+            # Initialize GHS
+            ghs_currency = self.ensure_currency_exists(
+                'GHS',
+                symbol='GH₵'
+            )
+            logger.info(f"Base currency (GHS) initialized: {ghs_currency}")
+            
+            # Initialize EUR (needed for API base currency)
+            eur_currency = self.ensure_currency_exists(
+                'EUR',
+                symbol='€'
+            )
+            logger.info(f"Base currency (EUR) initialized: {eur_currency}")
+            
+            return ghs_currency, eur_currency
+        except Exception as e:
+            error_msg = f"Failed to initialize base currencies: {str(e)}"
+            logger.error(error_msg)
+            raise Exception(error_msg)
+
+    def _update_currency_name(self, currency: Currency, code: str) -> None:
+        """
+        Update currency name outside of the main transaction.
+        
+        Args:
+            currency: Currency instance to update
+            code: Currency code to get name from
+        """
+        try:
+            currency.name = CURRENCY_NAMES.get(code, code)
+            currency.save()
+            logger.info(f"Updated currency name for {code}: {currency.name}")
+        except Exception as e:
+            logger.error(f"Failed to update currency name for {code}: {str(e)}")
+
     @transaction.atomic
     def update_exchange_rates(self) -> bool:
         """
@@ -186,6 +239,10 @@ class ExchangeRateService:
         try:
             logger.info("Starting exchange rate update process...")
             
+            # Initialize base currencies first
+            ghs_currency, _ = self._initialize_base_currencies()
+            
+            # Fetch latest rates
             rates_data = self.fetch_latest_rates()
             today = date.today()
             logger.info(f"Processing rates for date: {today}")
@@ -196,14 +253,12 @@ class ExchangeRateService:
                 raise ValueError("Could not get EUR to GHS rate")
             logger.info(f"EUR to GHS rate: {eur_to_ghs}")
             
-            # Ensure GHS exists
-            ghs_currency = self.ensure_currency_exists('GHS', symbol='GH₵')
-            logger.info(f"Base currency (GHS) ensured: {ghs_currency}")
-            
             # Update exchange rates
             rates_updated = 0
+            currencies_to_update = []
+            
             for currency_code, eur_rate in rates_data['rates'].items():
-                if currency_code == 'GHS':
+                if currency_code == 'GHS':  # Skip base currency
                     continue
                 
                 try:
@@ -212,26 +267,59 @@ class ExchangeRateService:
                         symbol=self.DEFAULT_SYMBOLS.get(currency_code)
                     )
                     
+                    # Store currency for name update after transaction
+                    currencies_to_update.append((currency, currency_code))
+                    
                     eur_to_target = Decimal(str(eur_rate))
                     ghs_to_target = self._calculate_ghs_rate(eur_to_target, eur_to_ghs)
                     
+                    logger.info(f"Calculated rate for {currency_code}: EUR={eur_to_target}, GHS={ghs_to_target}")
+                    
                     if ghs_to_target > 0:
-                        rate, created = self._update_exchange_rate(
-                            ghs_currency,
-                            currency,
-                            ghs_to_target,
-                            today
-                        )
-                        
-                        action = "Created" if created else "Updated"
-                        logger.info(f"{action} exchange rate: {ghs_currency.code}/{currency.code} = {ghs_to_target}")
-                        rates_updated += 1
+                        try:
+                            # Delete any existing rate for this currency pair and date
+                            ExchangeRate.objects.filter(
+                                from_currency=ghs_currency,
+                                to_currency=currency,
+                                date=today
+                            ).delete()
+                            
+                            # Create new rate
+                            rate = ExchangeRate.objects.create(
+                                from_currency=ghs_currency,
+                                to_currency=currency,
+                                rate=ghs_to_target,
+                                date=today,
+                                source='api'
+                            )
+                            
+                            logger.info(f"Created exchange rate: {ghs_currency.code}/{currency.code} = {ghs_to_target}")
+                            rates_updated += 1
+                            
+                        except Exception as e:
+                            logger.error(f"Failed to save exchange rate for {currency_code}: {str(e)}")
+                            continue
+                    else:
+                        logger.warning(f"Skipping zero or negative rate for {currency_code}")
                         
                 except Exception as e:
                     logger.error(f"Error processing currency {currency_code}: {str(e)}")
                     continue
             
             logger.info(f"Exchange rate update completed. Updated {rates_updated} rates.")
+            
+            # Update currency names after the transaction is complete
+            for currency, code in currencies_to_update:
+                self._update_currency_name(currency, code)
+            
+            # Verify rates were created
+            total_rates = ExchangeRate.objects.filter(date=today).count()
+            logger.info(f"Total exchange rates in database for {today}: {total_rates}")
+            
+            if total_rates == 0:
+                logger.error("No exchange rates were created!")
+                raise Exception("No exchange rates were created in the database")
+            
             return True
             
         except Exception as e:

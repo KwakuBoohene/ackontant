@@ -148,3 +148,33 @@ class ExchangeRateServiceTests(TestCase):
         updated_currency = self.service.ensure_currency_exists('USD')
         self.assertEqual(updated_currency.name, CURRENCY_NAMES['USD'])
         self.assertEqual(updated_currency.id, currency.id)  # Same currency instance 
+
+    @patch('accounts.services.ExchangeRateService._make_api_request')
+    def test_base_currencies_are_initialized(self, mock_api_request):
+        """Test that base currencies (GHS and EUR) are initialized before rate updates."""
+        # Mock the API response
+        mock_api_request.return_value = self.mock_api_response
+
+        # Run the update
+        self.service.update_exchange_rates()
+
+        # Verify GHS exists and is properly configured
+        ghs = Currency.objects.get(code='GHS')
+        self.assertEqual(ghs.name, CURRENCY_NAMES['GHS'])
+        self.assertEqual(ghs.symbol, 'GH₵')
+        self.assertTrue(ghs.is_platform_currency)
+        self.assertEqual(ghs.source, 'system')
+
+        # Verify EUR exists and is properly configured
+        eur = Currency.objects.get(code='EUR')
+        self.assertEqual(eur.name, CURRENCY_NAMES['EUR'])
+        self.assertEqual(eur.symbol, '€')
+        self.assertTrue(eur.is_platform_currency)
+        self.assertEqual(eur.source, 'system')
+
+        # Verify exchange rates were created
+        self.assertTrue(ExchangeRate.objects.filter(from_currency=ghs).exists())
+        self.assertEqual(
+            ExchangeRate.objects.filter(from_currency=ghs).count(),
+            len(self.mock_api_response['rates']) - 1  # -1 for GHS itself
+        ) 
