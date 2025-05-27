@@ -81,6 +81,8 @@ class TransferCreateSerializer(serializers.ModelSerializer):
         return data
 
 class TransactionSerializer(serializers.ModelSerializer):
+    account_id = serializers.UUIDField(write_only=True, required=True)
+    currency_id = serializers.UUIDField(write_only=True, required=True)
     account = AccountSerializer(read_only=True)
     currency = CurrencySerializer(read_only=True)
     category = serializers.PrimaryKeyRelatedField(
@@ -98,8 +100,8 @@ class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = [
-            'id', 'user', 'account', 'type', 'amount',
-            'currency', 'base_currency_amount', 'exchange_rate',
+            'id', 'user', 'account', 'account_id', 'type', 'amount',
+            'currency', 'currency_id', 'base_currency_amount', 'exchange_rate',
             'description', 'date', 'category', 'tags',
             'is_recurring', 'recurring_rule', 'is_archived',
             'transfer', 'created_at', 'updated_at'

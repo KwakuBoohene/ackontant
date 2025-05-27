@@ -13,6 +13,7 @@ import DeleteConfirmationModal from '../components/dashboard/DeleteConfirmationM
 import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
 import DashboardLayout from '../layouts/DashboardLayout';
+import Modal from '../components/modals/Modal';
 
 const AccountDetailsPage: React.FC = () => {
   const params = useParams({ from: '/accounts/$id' });
@@ -200,30 +201,46 @@ const AccountDetailsPage: React.FC = () => {
       </div>
 
       {isTransactionModalOpen && (
-        <TransactionForm
-          onSubmit={handleSubmit}
-          onCancel={() => {
-            setIsTransactionModalOpen(false);
-            setSelectedTransaction(null);
-            setForm({
-              amount: '',
-              type: 'EXPENSE',
-              date: new Date().toISOString().split('T')[0],
-              description: '',
-              category_id: '',
-              tag_ids: [],
-            });
-          }}
-          form={form}
-          setForm={setForm}
-          categories={categories}
-          tags={tags}
-          isLoadingCategories={isCategoriesLoading}
-          isLoadingTags={isTagsLoading}
-          isSubmitting={isSubmitting}
-          error={formError}
-          isEditing={!!selectedTransaction}
-        />
+        <Modal isOpen={isTransactionModalOpen} onClose={() => {
+          setIsTransactionModalOpen(false);
+          setSelectedTransaction(null);
+          setForm({
+            amount: '',
+            type: 'EXPENSE',
+            date: new Date().toISOString().split('T')[0],
+            description: '',
+            category_id: '',
+            tag_ids: [],
+          });
+        }}>
+          <h2 className="text-xl font-bold text-center mb-6 text-white">
+            {selectedTransaction ? 'Edit Transaction' : 'Add Transaction'}
+          </h2>
+          <TransactionForm
+            onSubmit={handleSubmit}
+            onCancel={() => {
+              setIsTransactionModalOpen(false);
+              setSelectedTransaction(null);
+              setForm({
+                amount: '',
+                type: 'EXPENSE',
+                date: new Date().toISOString().split('T')[0],
+                description: '',
+                category_id: '',
+                tag_ids: [],
+              });
+            }}
+            form={form}
+            setForm={setForm}
+            categories={categories}
+            tags={tags}
+            isLoadingCategories={isCategoriesLoading}
+            isLoadingTags={isTagsLoading}
+            isSubmitting={isSubmitting}
+            error={formError}
+            isEditing={!!selectedTransaction}
+          />
+        </Modal>
       )}
 
       {isDeleteModalOpen && (
