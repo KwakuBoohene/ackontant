@@ -148,6 +148,17 @@ const AccountDetailsPage: React.FC = () => {
     }
   };
 
+  const handleTypeChange = (type: keyof TransactionType) => {
+    setForm(prev => ({
+      ...prev,
+      type,
+      ...(type === 'TRANSFER' && accountId ? {
+        source_account_id: accountId,
+        source_currency_id: account?.currency.id
+      } : {})
+    }));
+  };
+
   if (isAccountLoading || isTransactionsLoading || isCategoriesLoading || isTagsLoading || isAccountsLoading) {
     return <LoadingState />;
   }
@@ -262,7 +273,13 @@ const AccountDetailsPage: React.FC = () => {
               });
             }}
             form={form}
-            setForm={setForm}
+            setForm={(newForm) => {
+              if (newForm.type !== form.type) {
+                handleTypeChange(newForm.type);
+              } else {
+                setForm(newForm);
+              }
+            }}
             categories={categories}
             tags={tags}
             accounts={accounts}
