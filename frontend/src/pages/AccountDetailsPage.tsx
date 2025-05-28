@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { useAccount, useDeleteAccount } from '../hooks/useAccounts';
+import { useAccount, useDeleteAccount, useAccounts } from '../hooks/useAccounts';
 import { useTransactions, useCreateTransaction, useUpdateTransaction, useDeleteTransaction } from '../hooks/useTransactions';
 import { useCategories, useCreateCategory } from '../hooks/useCategories';
 import { useTags, useCreateTag } from '../hooks/useTags';
@@ -14,6 +14,7 @@ import LoadingState from '../components/dashboard/LoadingState';
 import ErrorState from '../components/dashboard/ErrorState';
 import DashboardLayout from '../layouts/DashboardLayout';
 import Modal from '../components/modals/Modal';
+import type { Account } from '../types/accounts';
 
 const AccountDetailsPage: React.FC = () => {
   const params = useParams({ from: '/accounts/$id' });
@@ -29,6 +30,10 @@ const AccountDetailsPage: React.FC = () => {
     description: '',
     category_id: '',
     tag_ids: [] as string[],
+    source_account_id: '',
+    destination_account_id: '',
+    source_currency_id: '',
+    destination_currency_id: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -68,6 +73,12 @@ const AccountDetailsPage: React.FC = () => {
 
   const { mutateAsync: createTag } = useCreateTag();
 
+  const {
+    data: accounts = [],
+    isLoading: isAccountsLoading,
+    error: accountsError,
+  } = useAccounts();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!account) return;
@@ -105,6 +116,10 @@ const AccountDetailsPage: React.FC = () => {
         description: '',
         category_id: '',
         tag_ids: [],
+        source_account_id: '',
+        destination_account_id: '',
+        source_currency_id: '',
+        destination_currency_id: '',
       });
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'An error occurred');
@@ -133,11 +148,11 @@ const AccountDetailsPage: React.FC = () => {
     }
   };
 
-  if (isAccountLoading || isTransactionsLoading || isCategoriesLoading || isTagsLoading) {
+  if (isAccountLoading || isTransactionsLoading || isCategoriesLoading || isTagsLoading || isAccountsLoading) {
     return <LoadingState />;
   }
 
-  const pageError = accountError || transactionsError || categoriesError || tagsError;
+  const pageError = accountError || transactionsError || categoriesError || tagsError || accountsError;
   if (pageError) {
     console.error('Page Error:', pageError);
     return <ErrorState error={pageError instanceof Error ? pageError : new Error(String(pageError))} />;
@@ -171,6 +186,10 @@ const AccountDetailsPage: React.FC = () => {
                 description: '',
                 category_id: '',
                 tag_ids: [],
+                source_account_id: '',
+                destination_account_id: '',
+                source_currency_id: '',
+                destination_currency_id: '',
               });
               setIsTransactionModalOpen(true);
             }}
@@ -190,6 +209,10 @@ const AccountDetailsPage: React.FC = () => {
               description: transaction.description,
               category_id: transaction.category?.id || '',
               tag_ids: transaction.tags.map(tag => tag.id),
+              source_account_id: '',
+              destination_account_id: '',
+              source_currency_id: '',
+              destination_currency_id: '',
             });
             setIsTransactionModalOpen(true);
           }}
@@ -211,6 +234,10 @@ const AccountDetailsPage: React.FC = () => {
             description: '',
             category_id: '',
             tag_ids: [],
+            source_account_id: '',
+            destination_account_id: '',
+            source_currency_id: '',
+            destination_currency_id: '',
           });
         }}>
           <h2 className="text-xl font-bold text-center mb-6 text-white">
@@ -228,12 +255,17 @@ const AccountDetailsPage: React.FC = () => {
                 description: '',
                 category_id: '',
                 tag_ids: [],
+                source_account_id: '',
+                destination_account_id: '',
+                source_currency_id: '',
+                destination_currency_id: '',
               });
             }}
             form={form}
             setForm={setForm}
             categories={categories}
             tags={tags}
+            accounts={accounts}
             isLoadingCategories={isCategoriesLoading}
             isLoadingTags={isTagsLoading}
             isSubmitting={isSubmitting}
