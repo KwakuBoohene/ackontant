@@ -83,32 +83,24 @@ class TransferCreateSerializer(serializers.ModelSerializer):
 class TransactionSerializer(serializers.ModelSerializer):
     account_id = serializers.UUIDField(write_only=True, required=True)
     currency_id = serializers.UUIDField(write_only=True, required=True)
+    currency = CurrencySerializer(read_only=True)
+    account = AccountSerializer(read_only=True)
+    tags = TagSerializer(read_only=True, many=True)
+    category = CategorySerializer(read_only=True)
     category_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
     tag_ids = serializers.ListField(child=serializers.UUIDField(), required=False, allow_empty=True)
-    account = AccountSerializer(read_only=True)
-    currency = CurrencySerializer(read_only=True)
-    category = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(),
-        required=False,
-        allow_null=True
-    )
-    tags = serializers.PrimaryKeyRelatedField(
-        queryset=Tag.objects.all(),
-        many=True,
-        required=False
-    )
     transfer = TransferSerializer(read_only=True)
 
     class Meta:
         model = Transaction
         fields = [
-            'id', 'user', 'account', 'account_id', 'type', 'amount',
+            'id', 'user', 'account_id','account', 'type', 'amount',
             'currency', 'currency_id', 'base_currency_amount', 'exchange_rate',
             'description', 'date', 'category', 'category_id', 'tags', 'tag_ids',
             'is_recurring', 'recurring_rule', 'is_archived',
             'transfer', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['user', 'base_currency_amount']
+        read_only_fields = ['user', 'base_currency_amount', 'account', 'currency', 'tags', 'category']
 
     @extend_schema_field({
         'type': 'object',
