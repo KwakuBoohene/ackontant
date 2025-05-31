@@ -93,6 +93,16 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           <option value="TRANSFER">Transfer</option>
         </select>
       </div>
+      <div>
+            <label className="block mb-1 text-gray-300">Description</label>
+            <input
+              type="text"
+              className="w-full px-4 py-2 rounded-lg bg-[#232b3b] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              required
+            />
+          </div>
 
       {isTransfer ? (
         <>
@@ -141,16 +151,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
               required
             />
           </div>
-          <div>
-            <label className="block mb-1 text-gray-300">Description</label>
-            <input
-              type="text"
-              className="w-full px-4 py-2 rounded-lg bg-[#232b3b] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })}
-              required
-            />
-          </div>
+         
           <div>
             <label className="block mb-1 text-gray-300">Category</label>
             <div className="relative">
@@ -264,6 +265,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
         </>
       )}
+      
 
       {error && <div className="text-red-400 text-sm text-center">{error}</div>}
       <div className="flex justify-end gap-3 pt-2">
